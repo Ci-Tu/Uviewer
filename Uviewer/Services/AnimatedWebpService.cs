@@ -42,6 +42,7 @@ namespace Uviewer.Services
         private long _animatedWebpNextFrameTimestamp;
         private int _gpuFrameCacheCapacity = MinimumGpuFrameCacheCount;
         private int _framePrefetchActive;
+        private readonly SemaphoreSlim _framePersistenceSlots = new(2, 2);
 
         private readonly object _animatedWebpBitmapCacheLock = new();
         private readonly Dictionary<int, CanvasBitmap> _animatedWebpFrameCache = new();
@@ -50,6 +51,7 @@ namespace Uviewer.Services
         private CanvasControl? _currentCanvas;
         private CanvasDevice? _animationDevice;
         private AnimationFrameStore? _frameStore;
+        private AnimationFrameStore? _processedFrameStore;
         
         // Settings for sharpening (cached during animation)
         private bool _sharpenEnabled;
@@ -104,14 +106,24 @@ namespace Uviewer.Services
                 IsDisplayReady = isDisplayReady;
             }
 
+            private AnimatedFrameData(AnimationFrameStore store, AnimationFrameStore.Frame storedFrame,
+                int width, int height)
+            {
+                _store = store;
+                _storedFrame = storedFrame;
+                Width = width;
+                Height = height;
+                IsDisplayReady = true;
+            }
+
             private readonly AnimationFrameStore _store;
-            private AnimationFrameStore.Frame _storedFrame;
+            private readonly AnimationFrameStore.Frame _storedFrame;
             public byte[] Pixels => _store.Read(_storedFrame);
-            public AnimationFrameStore.Frame StorePixels(byte[] pixels) => _store.Write(pixels);
-            public void UseStoredPixels(AnimationFrameStore.Frame frame) => _storedFrame = frame;
-            public int Width { get; set; }
-            public int Height { get; set; }
-            public bool IsDisplayReady { get; set; }
+            public AnimatedFrameData StoreProcessedPixels(AnimationFrameStore store, byte[] pixels, int width, int height) =>
+                new(store, store.Write(pixels), width, height);
+            public int Width { get; }
+            public int Height { get; }
+            public bool IsDisplayReady { get; }
         }
 
         [DllImport("winmm.dll")]
@@ -183,6 +195,8 @@ namespace Uviewer.Services
             {
                 _frameStore?.Dispose();
                 _frameStore = null;
+                _processedFrameStore?.Dispose();
+                _processedFrameStore = null;
                 _animatedWebpFrames?.Clear();
                 _animatedWebpFrames = null;
 
@@ -298,6 +312,7 @@ namespace Uviewer.Services
                     if (animationGeneration != Volatile.Read(ref _animationGeneration)) return;
                     store = new AnimationFrameStore();
                     _frameStore = store;
+                    _processedFrameStore = sharpenEnabled ? new AnimationFrameStore() : null;
                 }
 
                 if (isAvif)
@@ -307,7 +322,7 @@ namespace Uviewer.Services
                         store,
                         animationGeneration,
                         token);
-                    QueueAnimationTimerStart(avifFrames, token, animationGeneration);
+                    await QueueAnimationTimerStartAsync(avifFrames, token, animationGeneration);
                     return;
                 }
 
@@ -320,7 +335,7 @@ namespace Uviewer.Services
                     store,
                     animationGeneration,
                     token);
-                QueueAnimationTimerStart(frames, token, animationGeneration);
+                await QueueAnimationTimerStartAsync(frames, token, animationGeneration);
             }
             catch (OperationCanceledException) { }
             catch (Exception ex)
@@ -336,6 +351,8 @@ namespace Uviewer.Services
                     {
                         _frameStore?.Dispose();
                         _frameStore = null;
+                        _processedFrameStore?.Dispose();
+                        _processedFrameStore = null;
                     }
                 }
                 if (token.IsCancellationRequested && animationGeneration == Volatile.Read(ref _animationGeneration))
@@ -343,7 +360,7 @@ namespace Uviewer.Services
             }
         }
 
-        private void QueueAnimationTimerStart(
+        private async Task QueueAnimationTimerStartAsync(
             List<AnimatedFrameData>? frames,
             CancellationToken token,
             int animationGeneration)
@@ -354,6 +371,38 @@ namespace Uviewer.Services
                 || animationGeneration != Volatile.Read(ref _animationGeneration))
             {
                 return;
+            }
+
+            // The still preview is already visible. Buffer a short lead before
+            // starting the media clock so first-pass decoding does not repeatedly
+            // run out of frames and stretch the animation's first loop.
+            long bufferingStarted = Stopwatch.GetTimestamp();
+            while (_isDecodingAnimatedImage)
+            {
+                token.ThrowIfCancellationRequested();
+                lock (_animatedWebpBitmapCacheLock)
+                {
+                    if (_animatedWebpFrames != frames || animationGeneration != Volatile.Read(ref _animationGeneration)) return;
+                    long bufferedMs = 0;
+                    if (_animatedWebpDelaysMs != null)
+                        foreach (int delay in _animatedWebpDelaysMs) bufferedMs += delay;
+                    if (bufferedMs >= 1000) break;
+                }
+                if (Stopwatch.GetElapsedTime(bufferingStarted).TotalMilliseconds >= 1500) break;
+                await Task.Delay(5, token).ConfigureAwait(false);
+            }
+
+            var canvas = _currentCanvas;
+            if (canvas != null)
+            {
+                int primeCount;
+                lock (_animatedWebpBitmapCacheLock)
+                    primeCount = Math.Min(3, Math.Min(_gpuFrameCacheCapacity, frames.Count));
+                for (int i = 0; i < primeCount; i++)
+                {
+                    token.ThrowIfCancellationRequested();
+                    if (await GetOrPrepareFrameBitmapAsync(frames, canvas, i).ConfigureAwait(false) == null) break;
+                }
             }
 
             _dispatcherQueue.TryEnqueue(() =>
@@ -674,26 +723,7 @@ namespace Uviewer.Services
                         _unsharpRadius,
                         skipUpscale: false).ConfigureAwait(false) ?? originalBitmap;
 
-                    byte[] processedPixels = displayBitmap.GetPixelBytes();
-                    int processedWidth = (int)displayBitmap.SizeInPixels.Width;
-                    int processedHeight = (int)displayBitmap.SizeInPixels.Height;
-                    var storedPixels = frame.StorePixels(processedPixels);
-
-                    lock (_animatedWebpBitmapCacheLock)
-                    {
-                        if (_animatedWebpFrames == frames
-                            && _currentCanvas == canvas
-                            && frameIndex < frames.Count
-                            && ReferenceEquals(frames[frameIndex], frame))
-                        {
-                            // 샤프닝 결과도 무손실 임시 저장소에 보관하여
-                            // 다음 루프에서 효과를 다시 계산하지 않는다.
-                            frame.UseStoredPixels(storedPixels);
-                            frame.Width = processedWidth;
-                            frame.Height = processedHeight;
-                            frame.IsDisplayReady = true;
-                        }
-                    }
+                    QueueProcessedFramePersistence(frames, canvas, frame, frameIndex, displayBitmap);
                 }
 
                 if (!ReferenceEquals(displayBitmap, originalBitmap))
@@ -731,6 +761,60 @@ namespace Uviewer.Services
                 }
                 try { originalBitmap?.Dispose(); } catch { }
                 return null;
+            }
+        }
+
+        private void QueueProcessedFramePersistence(List<AnimatedFrameData> frames, CanvasControl canvas,
+            AnimatedFrameData frame, int frameIndex, CanvasBitmap bitmap)
+        {
+            // During the first pass, prioritize decoding frames that do not exist
+            // yet. Caching enlarged pixels competes with that work for CPU/disk and
+            // can starve playback. GPU processing still applies normally; persist
+            // its results on subsequent visits once source decoding has finished.
+            if (_isDecodingAnimatedImage) return;
+            // Disk compression must never delay publishing an already-rendered frame.
+            // At most two readbacks are retained; if storage falls behind, keep playing
+            // and try caching that frame on a later loop instead of growing memory.
+            AnimationFrameStore? store;
+            lock (_animatedWebpBitmapCacheLock)
+            {
+                if (_animatedWebpFrames != frames || _currentCanvas != canvas) return;
+                store = _processedFrameStore;
+            }
+            if (store == null || !_framePersistenceSlots.Wait(0)) return;
+            try
+            {
+                byte[] pixels = bitmap.GetPixelBytes();
+                int width = (int)bitmap.SizeInPixels.Width;
+                int height = (int)bitmap.SizeInPixels.Height;
+                _ = Task.Run(() =>
+                {
+                    try
+                    {
+                        lock (_animatedWebpBitmapCacheLock)
+                        {
+                            if (_animatedWebpFrames != frames || _currentCanvas != canvas) return;
+                        }
+                        var processed = frame.StoreProcessedPixels(store, pixels, width, height);
+                        lock (_animatedWebpBitmapCacheLock)
+                        {
+                            if (_animatedWebpFrames == frames && _currentCanvas == canvas
+                                && frameIndex < frames.Count && ReferenceEquals(frames[frameIndex], frame))
+                            {
+                                // Replace immutable metadata atomically: an upload already
+                                // in flight continues to use its original pixels/dimensions.
+                                frames[frameIndex] = processed;
+                            }
+                        }
+                    }
+                    catch (Exception ex) { Debug.WriteLine($"Animated frame persistence: {ex.Message}"); }
+                    finally { _framePersistenceSlots.Release(); }
+                });
+            }
+            catch (Exception ex)
+            {
+                _framePersistenceSlots.Release();
+                Debug.WriteLine($"Animated frame readback: {ex.Message}");
             }
         }
 
@@ -1246,8 +1330,11 @@ namespace Uviewer.Services
                                     }
                                 }
 
-                                using (var ds = backupRenderTarget.CreateDrawingSession())
+                                // WebP has only keep/background disposal. The full
+                                // canvas backup is needed solely for GIF restore-previous.
+                                if (webpFrameInfos == null)
                                 {
+                                    using var ds = backupRenderTarget.CreateDrawingSession();
                                     ds.Blend = CanvasBlend.Copy;
                                     ds.DrawImage(bgRenderTarget);
                                 }

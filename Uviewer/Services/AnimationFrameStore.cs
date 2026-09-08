@@ -1,6 +1,6 @@
 using System;
 using System.IO;
-using System.IO.Compression;
+using K4os.Compression.LZ4;
 
 namespace Uviewer.Services;
 
@@ -9,7 +9,13 @@ namespace Uviewer.Services;
 internal sealed class AnimationFrameStore : IDisposable
 {
     private readonly object _gate = new();
+    private readonly object _writeGate = new();
+    private readonly object _readGate = new();
     private FileStream? _stream;
+    // Per-animation scratch buffers: reuse without retaining large arrays in a
+    // process-wide pool after Stop. Size is bounded by the largest single frame.
+    private byte[] _writeBuffer = Array.Empty<byte>();
+    private byte[] _readBuffer = Array.Empty<byte>();
 
     public AnimationFrameStore()
     {
@@ -18,40 +24,67 @@ internal sealed class AnimationFrameStore : IDisposable
             FileOptions.DeleteOnClose | FileOptions.RandomAccess);
     }
 
-    public readonly record struct Frame(long Offset, int Length);
+    public readonly record struct Frame(long Offset, int Length, int StoredLength, bool Compressed);
 
     public Frame Write(byte[] pixels)
     {
-        lock (_gate)
+        lock (_writeGate)
         {
             ObjectDisposedException.ThrowIf(_stream == null, this);
-            _stream.Position = _stream.Length;
-            var frame = new Frame(_stream.Position, pixels.Length);
-            using (var compressor = new DeflateStream(_stream, CompressionLevel.Fastest, leaveOpen: true))
-                compressor.Write(pixels);
-            return frame;
+            int capacity = LZ4Codec.MaximumOutputSize(pixels.Length);
+            if (_writeBuffer.Length < capacity)
+                _writeBuffer = GC.AllocateUninitializedArray<byte>(capacity);
+            int encoded = LZ4Codec.Encode(pixels.AsSpan(), _writeBuffer.AsSpan(), LZ4Level.L00_FAST);
+            bool compressed = encoded > 0 && encoded < pixels.Length;
+            int storedLength = compressed ? encoded : pixels.Length;
+            lock (_gate)
+            {
+                _stream.Position = _stream.Length;
+                var frame = new Frame(_stream.Position, pixels.Length, storedLength, compressed);
+                _stream.Write(compressed ? _writeBuffer.AsSpan(0, storedLength) : pixels.AsSpan());
+                return frame;
+            }
         }
     }
 
     public byte[] Read(Frame frame)
     {
-        lock (_gate)
+        lock (_readGate)
         {
             ObjectDisposedException.ThrowIf(_stream == null, this);
-            _stream.Position = frame.Offset;
             byte[] pixels = GC.AllocateUninitializedArray<byte>(frame.Length);
-            using var decompressor = new DeflateStream(_stream, CompressionMode.Decompress, leaveOpen: true);
-            decompressor.ReadExactly(pixels);
+            if (!frame.Compressed)
+            {
+                lock (_gate)
+                {
+                    _stream.Position = frame.Offset;
+                    _stream.ReadExactly(pixels);
+                }
+                return pixels;
+            }
+            if (_readBuffer.Length < frame.StoredLength)
+                _readBuffer = GC.AllocateUninitializedArray<byte>(frame.StoredLength);
+            lock (_gate)
+            {
+                _stream.Position = frame.Offset;
+                _stream.ReadExactly(_readBuffer.AsSpan(0, frame.StoredLength));
+            }
+            if (LZ4Codec.Decode(_readBuffer.AsSpan(0, frame.StoredLength), pixels.AsSpan()) != frame.Length)
+                throw new InvalidDataException("Incomplete animation frame in temporary storage.");
             return pixels;
         }
     }
 
     public void Dispose()
     {
+        lock (_writeGate)
+        lock (_readGate)
         lock (_gate)
         {
             _stream?.Dispose();
             _stream = null;
+            _writeBuffer = Array.Empty<byte>();
+            _readBuffer = Array.Empty<byte>();
         }
     }
 }
