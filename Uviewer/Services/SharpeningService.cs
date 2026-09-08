@@ -1,6 +1,7 @@
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.Effects;
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
 using Windows.Graphics.DirectX;
@@ -18,6 +19,8 @@ namespace Uviewer.Services
             float unsharpRadius,
             bool skipUpscale = false)
         {
+            ICanvasImage currentEffect = originalBitmap;
+            CanvasRenderTarget? finalTarget = null;
             try
             {
                 var device = originalBitmap.Device;
@@ -34,7 +37,6 @@ namespace Uviewer.Services
                 float hdrNormalizationScale = isHdr
                     ? HdrImageDecoder.GetNormalizationScale(originalBitmap)
                     : 1.0f;
-                ICanvasImage currentEffect = originalBitmap;
 
                 // Direct2D sharpening effects are defined for normalized color
                 // values. Normalize extended-range scRGB first so HDR highlights
@@ -134,7 +136,7 @@ namespace Uviewer.Services
                 }
 
                 // 4. 최종 결과물 렌더링
-                var finalTarget = originalBitmap.Format == DirectXPixelFormat.R16G16B16A16Float
+                finalTarget = originalBitmap.Format == DirectXPixelFormat.R16G16B16A16Float
                     ? new CanvasRenderTarget(
                         device,
                         finalWidth,
@@ -154,14 +156,37 @@ namespace Uviewer.Services
 
                 if (isHdr) HdrImageDecoder.CopyMetadata(originalBitmap, finalTarget);
 
-                // 메모리 관리 (업스케일이 진행되었다면 중간 파이프라인에서 생성된 리소스들은 GC가 수거)
                 return finalTarget;
             }
             catch (Exception ex)
             {
+                finalTarget?.Dispose();
                 System.Diagnostics.Debug.WriteLine($"Error in Sharpening Processing: {ex.Message}");
                 return originalBitmap;
             }
+            finally
+            {
+                DisposeEffects(currentEffect, originalBitmap, new HashSet<object>(ReferenceEqualityComparer.Instance));
+            }
+        }
+
+        private static void DisposeEffects(object? image, CanvasBitmap source, HashSet<object> visited)
+        {
+            if (image == null || ReferenceEquals(image, source) || !visited.Add(image)) return;
+            // Effects retain their input graph and native Direct2D resources. Release
+            // them after rendering instead of waiting for a managed GC during playback.
+            switch (image)
+            {
+                case ColorMatrixEffect effect: DisposeEffects(effect.Source, source, visited); break;
+                case ScaleEffect effect: DisposeEffects(effect.Source, source, visited); break;
+                case SharpenEffect effect: DisposeEffects(effect.Source, source, visited); break;
+                case GaussianBlurEffect effect: DisposeEffects(effect.Source, source, visited); break;
+                case ArithmeticCompositeEffect effect:
+                    DisposeEffects(effect.Source1, source, visited);
+                    DisposeEffects(effect.Source2, source, visited);
+                    break;
+            }
+            (image as IDisposable)?.Dispose();
         }
 
 
