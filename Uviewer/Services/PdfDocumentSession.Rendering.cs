@@ -53,22 +53,39 @@ namespace Uviewer.Services
         public async Task<bool> CloseAsync(TimeSpan timeout)
         {
             CancelOperations();
-            if (Document == null) return true;
-
-            if (!await _lock.WaitAsync(timeout))
-            {
-                System.Diagnostics.Debug.WriteLine("PDF lock timeout - aborting format switch to avoid unsafe dispose");
-                return false;
-            }
-
+            using var timeoutCts = new CancellationTokenSource(timeout);
+            bool lockHeld = false;
+            bool preloadSlotHeld = false;
+            int currentSlotsHeld = 0;
             try
             {
+                await _lock.WaitAsync(timeoutCts.Token);
+                lockHeld = true;
+                CancelOperations();
+
+                // Cancellation only requests shutdown. Wait until native rendering,
+                // decoding, and their page/stream disposal have actually completed
+                // before dropping the document and collecting its memory.
+                await _preloadRenderSemaphore.WaitAsync(timeoutCts.Token);
+                preloadSlotHeld = true;
+                for (; currentSlotsHeld < 2; currentSlotsHeld++)
+                {
+                    await _currentPageRenderSemaphore.WaitAsync(timeoutCts.Token);
+                }
+
                 CloseInternal();
                 return true;
             }
+            catch (OperationCanceledException)
+            {
+                System.Diagnostics.Debug.WriteLine("PDF close timed out waiting for active rendering to stop");
+                return false;
+            }
             finally
             {
-                _lock.Release();
+                if (currentSlotsHeld > 0) _currentPageRenderSemaphore.Release(currentSlotsHeld);
+                if (preloadSlotHeld) _preloadRenderSemaphore.Release();
+                if (lockHeld) _lock.Release();
             }
         }
 
@@ -87,6 +104,7 @@ namespace Uviewer.Services
         public CancellationToken RestartZoomRerender()
         {
             _zoomRerenderCts?.Cancel();
+            _zoomRerenderCts?.Dispose();
             _zoomRerenderCts = CancellationTokenSource.CreateLinkedTokenSource(DocumentToken);
             return _zoomRerenderCts.Token;
         }
@@ -153,23 +171,21 @@ namespace Uviewer.Services
 
                 if (linkedToken.IsCancellationRequested || !IsCurrentScope(pdfGenerationAtStart, pdfPathAtStart)) return null;
 
-                using var pdfPage = pdfDoc.GetPage(pageIndex);
-                using var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
-
-                var (destinationWidth, destinationHeight) =
-                    CalculateRenderDimensions(pdfPage, canvas, zoomLevel, isPreload);
-
-                var options = new PdfPageRenderOptions
-                {
-                    DestinationWidth = destinationWidth,
-                    DestinationHeight = destinationHeight
-                };
-
                 var semaphore = isPreload ? _preloadRenderSemaphore : _currentPageRenderSemaphore;
                 await semaphore.WaitAsync(linkedToken);
                 try
                 {
                     if (isWindowClosing() || linkedToken.IsCancellationRequested || !IsCurrentScope(pdfGenerationAtStart, pdfPathAtStart)) return null;
+
+                    using var pdfPage = pdfDoc.GetPage(pageIndex);
+                    using var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+                    var (destinationWidth, destinationHeight) =
+                        CalculateRenderDimensions(pdfPage, canvas, zoomLevel, isPreload);
+                    var options = new PdfPageRenderOptions
+                    {
+                        DestinationWidth = destinationWidth,
+                        DestinationHeight = destinationHeight
+                    };
 
                     var renderOperation = pdfPage.RenderToStreamAsync(stream, options);
                     using var renderCancel = linkedToken.Register(() =>
@@ -269,6 +285,10 @@ namespace Uviewer.Services
         {
             CancelOperations();
             Document = null;
+            _zoomRerenderCts?.Dispose();
+            _zoomRerenderCts = null;
+            _documentCts?.Dispose();
+            _documentCts = null;
         }
     }
 }

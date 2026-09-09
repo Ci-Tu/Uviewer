@@ -20,6 +20,7 @@ namespace Uviewer.Services
         public Action ClearImageCache { get; init; } = null!;
         public Action ResetImageState { get; init; } = null!;
         public Action ApplyClearedImageUi { get; init; } = null!;
+        public Action TrimImageDeviceResources { get; init; } = null!;
     }
 
     internal sealed class ExplorerDocumentReleaseService
@@ -56,6 +57,13 @@ namespace Uviewer.Services
             ResetViewerAfterExplorerOperation();
 
             await DocumentMemoryReclaimer.CollectAsync(reduceMemory);
+
+            if (reduceMemory)
+            {
+                // Finalized WinRT PDF objects can release native graphics resources
+                // too, so trim only after their finalizers have completed.
+                RunStep("trim image device resources", _handlers.TrimImageDeviceResources);
+            }
         }
 
         public void ResetViewerAfterExplorerOperation()

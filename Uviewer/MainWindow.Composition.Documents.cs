@@ -109,6 +109,12 @@ namespace Uviewer
                             StopAnimatedImages = window._animatedWebpService.Stop,
                             StopFastNavigation = window._fastNavigationService.StopTimers,
                             ClearImageCache = window._imageViewerController.ClearImageResources,
+                            TrimImageDeviceResources = () =>
+                            {
+                                window.MainCanvas?.Device?.Trim();
+                                window.LeftCanvas?.Device?.Trim();
+                                window.RightCanvas?.Device?.Trim();
+                            },
                             ResetImageState = () =>
                             {
                                 window._imageViewerState.ClearBitmaps();
