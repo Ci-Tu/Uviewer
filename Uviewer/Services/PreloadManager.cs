@@ -16,6 +16,14 @@ namespace Uviewer.Services
         private const int DefaultPreloadCount = 5;
 
         private CancellationTokenSource? _preloadCts;
+        private PdfPreloadRequest? _pdfRequest;
+        private Task? _pdfPreloadTask;
+
+        private sealed record PdfPreloadRequest(
+            int CurrentIndex, List<ImageEntry> Entries, double Zoom, int Generation,
+            CanvasBitmap? CurrentBitmap, CanvasBitmap? LeftBitmap, CanvasBitmap? RightBitmap,
+            Func<ImageEntry, CancellationToken, Task<CanvasBitmap?>> Load,
+            Action Invalidate, bool PrioritizeNext);
 
         public PreloadManager(ImageCacheManager imageCache, DispatcherQueue dispatcherQueue)
         {
@@ -26,6 +34,8 @@ namespace Uviewer.Services
         // 기존 프리로드 작업 취소
         public void CancelAll()
         {
+            _pdfRequest = null;
+            _pdfPreloadTask = null;
             _preloadCts?.Cancel();
             _preloadCts?.Dispose();
             _preloadCts = null;
@@ -47,17 +57,20 @@ namespace Uviewer.Services
         {
             try
             {
+                if (isPdfMode)
+                {
+                    await StartPdfPreloadAsync(new PdfPreloadRequest(
+                        currentIndex, entries, zoomLevel, _imageCache.Generation,
+                        currentBitmap, leftBitmap, rightBitmap, loadBitmapFunc,
+                        invalidateCanvasAction, prioritizeNext));
+                    return;
+                }
+
                 CancelAll();
 
                 _preloadCts = new CancellationTokenSource();
                 var token = _preloadCts.Token;
                 int generation = _imageCache.Generation;
-
-                // PDF의 경우 연속 스크롤 디바운스를 위해 잠시 대기
-                if (isPdfMode)
-                {
-                    await Task.Delay(700, token).ContinueWith(_ => { }, TaskContinuationOptions.None);
-                }
 
                 if (token.IsCancellationRequested || entries == null || entries.Count == 0) return;
 
@@ -135,6 +148,102 @@ namespace Uviewer.Services
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Preload error: {ex.Message}");
+            }
+        }
+
+        private Task StartPdfPreloadAsync(PdfPreloadRequest request)
+        {
+            var previousTask = _pdfPreloadTask;
+            // Navigation updates the desired window without cancelling useful
+            // in-flight pages. Document/cache/zoom changes still cancel the scope.
+            if (_pdfRequest == null ||
+                !ReferenceEquals(_pdfRequest.Entries, request.Entries) ||
+                _pdfRequest.Generation != request.Generation ||
+                _pdfRequest.Zoom != request.Zoom)
+            {
+                CancelAll();
+                _preloadCts = new CancellationTokenSource();
+            }
+
+            _pdfRequest = request;
+            if (_pdfPreloadTask == null || _pdfPreloadTask.IsCompleted)
+                _pdfPreloadTask = RunPdfPreloadAsync(_preloadCts!.Token, previousTask);
+            return _pdfPreloadTask;
+        }
+
+        private async Task RunPdfPreloadAsync(CancellationToken token, Task? previousTask)
+        {
+            // Capture UI-owned canvas/context on the caller's dispatcher, not
+            // inside Task.Run. Native rendering itself is asynchronous.
+            await Task.Yield();
+            // A replaced zoom scope must release its loading marks before the
+            // new scope selects pages, otherwise the nearest pages can be skipped.
+            if (previousTask != null)
+            {
+                try { await previousTask; }
+                catch (OperationCanceledException) { }
+            }
+            var attempted = new HashSet<int>();
+            PdfPreloadRequest? previousRequest = null;
+            while (!token.IsCancellationRequested)
+            {
+                var request = _pdfRequest;
+                if (request == null || request.Generation != _imageCache.Generation) return;
+                if (!ReferenceEquals(previousRequest, request)) attempted.Clear();
+                previousRequest = request;
+
+                var batch = new List<Task>(2);
+                for (int distance = 1; distance <= 3 && batch.Count < 2; distance++)
+                {
+                    int direction = request.PrioritizeNext ? 1 : -1;
+                    foreach (int index in new[] {
+                        request.CurrentIndex + distance * direction,
+                        request.CurrentIndex - distance * direction })
+                    {
+                        if (batch.Count == 2) break;
+                        if (index < 0 || index >= request.Entries.Count ||
+                            !request.Entries[index].IsPdfEntry ||
+                            _imageCache.GetPreloadedImage(index) != null ||
+                            !attempted.Add(index)) continue;
+                        batch.Add(LoadPdfPreviewAsync(request, index, token));
+                    }
+                }
+
+                if (batch.Count == 0)
+                {
+                    _imageCache.CleanupOldPreloadedImages(request.CurrentIndex, true,
+                        DefaultPreloadCount, request.CurrentBitmap, request.LeftBitmap, request.RightBitmap);
+                    return;
+                }
+
+                // Only two pages are queued at a time. After each batch, read the
+                // newest navigation direction instead of rendering a stale queue.
+                await Task.WhenAll(batch);
+            }
+        }
+
+        private async Task LoadPdfPreviewAsync(PdfPreloadRequest request, int index, CancellationToken token)
+        {
+            if (!_imageCache.TryMarkForLoading(index, request.Generation)) return;
+            try
+            {
+                token.ThrowIfCancellationRequested();
+                var bitmap = await request.Load(request.Entries[index], token);
+                if (bitmap == null) return;
+                if (_imageCache.UpdateCache(index, bitmap, true, request.Zoom,
+                    _pdfRequest?.CurrentBitmap, request.Generation, token, preserveExisting: true))
+                {
+                    if (!token.IsCancellationRequested) request.Invalidate();
+                }
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"PDF preload error: {ex.Message}");
+            }
+            finally
+            {
+                _imageCache.UnmarkLoading(index, request.Generation);
             }
         }
 

@@ -30,7 +30,9 @@ namespace Uviewer.Services
             _host.SwitchToImageMode();
             _host.IsCurrentViewSideBySide = false;
 
-            CanvasBitmap? nextBitmap = _host.ImageCache.GetPreloadedImage(_host.CurrentIndex, _host.ZoomLevel);
+            // Any cached resolution is useful immediately; the resolution check in
+            // RerenderCurrentPageAsync upgrades it after navigation settles.
+            CanvasBitmap? nextBitmap = _host.ImageCache.GetPreloadedImage(_host.CurrentIndex);
 
             if (nextBitmap == null)
             {
@@ -51,15 +53,7 @@ namespace Uviewer.Services
             int capturedIndexAtStart,
             CancellationToken token)
         {
-            var tempOldBitmap = _host.CurrentBitmap;
-            _host.CurrentBitmap = null;
-            _host.MainCanvas?.Invalidate();
-
-            if (tempOldBitmap != null && !_isBitmapInCache(tempOldBitmap))
-            {
-                _host.ImageCache.SafeDisposeBitmap(tempOldBitmap);
-            }
-
+            // Keep the displayed bitmap alive until its replacement is ready.
             var nextBitmap = await _host.LoadPdfPageBitmapAsync(entry.PdfPageIndex, _host.MainCanvas!, token);
 
             if (nextBitmap != null)

@@ -4,6 +4,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.Data.Pdf;
+using Windows.Graphics.Imaging;
 using Windows.Storage;
 
 namespace Uviewer.Services
@@ -11,9 +12,8 @@ namespace Uviewer.Services
     public sealed partial class PdfDocumentSession
     {
         private readonly SemaphoreSlim _lock = new(1, 1);
-        // High-resolution PDF rendering is CPU and memory-bandwidth intensive. Keep
-        // speculative work serialized so it cannot contend with the visible page.
-        private readonly SemaphoreSlim _preloadRenderSemaphore = new(1, 1);
+        private const int PreloadRenderSlots = 2;
+        private readonly SemaphoreSlim _preloadRenderSemaphore = new(PreloadRenderSlots, PreloadRenderSlots);
         private readonly SemaphoreSlim _currentPageRenderSemaphore = new(2, 2);
 
         private CancellationTokenSource? _zoomRerenderCts;
@@ -55,7 +55,7 @@ namespace Uviewer.Services
             CancelOperations();
             using var timeoutCts = new CancellationTokenSource(timeout);
             bool lockHeld = false;
-            bool preloadSlotHeld = false;
+            int preloadSlotsHeld = 0;
             int currentSlotsHeld = 0;
             try
             {
@@ -66,8 +66,10 @@ namespace Uviewer.Services
                 // Cancellation only requests shutdown. Wait until native rendering,
                 // decoding, and their page/stream disposal have actually completed
                 // before dropping the document and collecting its memory.
-                await _preloadRenderSemaphore.WaitAsync(timeoutCts.Token);
-                preloadSlotHeld = true;
+                for (; preloadSlotsHeld < PreloadRenderSlots; preloadSlotsHeld++)
+                {
+                    await _preloadRenderSemaphore.WaitAsync(timeoutCts.Token);
+                }
                 for (; currentSlotsHeld < 2; currentSlotsHeld++)
                 {
                     await _currentPageRenderSemaphore.WaitAsync(timeoutCts.Token);
@@ -84,7 +86,7 @@ namespace Uviewer.Services
             finally
             {
                 if (currentSlotsHeld > 0) _currentPageRenderSemaphore.Release(currentSlotsHeld);
-                if (preloadSlotHeld) _preloadRenderSemaphore.Release();
+                if (preloadSlotsHeld > 0) _preloadRenderSemaphore.Release(preloadSlotsHeld);
                 if (lockHeld) _lock.Release();
             }
         }
@@ -184,7 +186,9 @@ namespace Uviewer.Services
                     var options = new PdfPageRenderOptions
                     {
                         DestinationWidth = destinationWidth,
-                        DestinationHeight = destinationHeight
+                        DestinationHeight = destinationHeight,
+                        // Avoid PNG compression/decompression for an in-memory image.
+                        BitmapEncoderId = BitmapEncoder.BmpEncoderId
                     };
 
                     var renderOperation = pdfPage.RenderToStreamAsync(stream, options);
@@ -218,7 +222,7 @@ namespace Uviewer.Services
                 finally
                 {
                     // Include stream decoding in the concurrency budget. Otherwise
-                    // several 6K PNG decodes can run after the render slots are freed.
+                    // several large bitmap decodes can run after render slots are freed.
                     semaphore.Release();
                 }
             }
@@ -257,13 +261,16 @@ namespace Uviewer.Services
             // Preloads keep their bounded memory budget. The visible page instead
             // needs one rendered pixel per physical screen pixel at the current zoom.
             double targetWidth = isPreload
-                ? Math.Clamp(visibleWidthInDips * zoomLevel, 1920.0 / currentDpiScale, 6016.0 / currentDpiScale)
+                ? Math.Clamp(visibleWidthInDips * zoomLevel * currentDpiScale, 1280.0, 2560.0)
                 : Math.Max(1920.0, visibleWidthInDips * zoomLevel * currentDpiScale);
 
             // CanvasBitmap must fit the device texture limit in both dimensions.
             var device = canvas.Device ?? CanvasDevice.GetSharedDevice();
             double maxDimension = device.MaximumBitmapSizeInPixels;
             targetWidth = Math.Min(targetWidth, maxDimension * Math.Min(1.0, pageAR));
+            // Bound each speculative BGRA bitmap to about 24 MiB, including
+            // unusually tall pages. Foreground rendering retains full resolution.
+            if (isPreload) targetWidth = Math.Min(targetWidth, Math.Sqrt(6_000_000 * pageAR));
 
             double scale = pdfPage.Size.Width > 0
                 ? targetWidth / pdfPage.Size.Width

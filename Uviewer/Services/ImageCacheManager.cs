@@ -79,7 +79,7 @@ namespace Uviewer.Services
 
         public bool UpdateCache(int index, CanvasBitmap bitmap, bool isPdf, double currentZoom,
             CanvasBitmap? currentDisplayingBitmap = null, int? expectedGeneration = null,
-            CancellationToken token = default)
+            CancellationToken token = default, bool preserveExisting = false)
         {
             lock (_lockObject)
             {
@@ -91,6 +91,13 @@ namespace Uviewer.Services
                 }
 
                 bool hasOld = _preloadedImages.TryGetValue(index, out var oldBitmap);
+                // A speculative result must not replace/dispose a page that a
+                // concurrent foreground load has already put on screen.
+                if (preserveExisting && hasOld && oldBitmap != bitmap)
+                {
+                    ReleaseBitmapIfUncached(bitmap);
+                    return false;
+                }
                 
                 _preloadedImages[index] = bitmap;
                 if (isPdf)
