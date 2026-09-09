@@ -279,6 +279,12 @@ namespace Uviewer.Services
                 context.SyncSidebarSelection(entry);
                 context.InvalidateCanvas();
                 StartPreload(context, targetIndex, forward);
+                if (context.IsPdfMode())
+                {
+                    // A cached preload may have been rendered at a lower zoom or
+                    // at the preload resolution cap. Promote it to visible quality.
+                    _ = _rerenderPdfCurrentPageAsync();
+                }
 
                 return true;
             }

@@ -287,9 +287,11 @@ namespace Uviewer.Services
                     return;
                 }
 
-                var newBitmap = await LoadPageBitmapAsync(
+                var newBitmap = await pdfSession.LoadPageBitmapAsync(
                     entry.PdfPageIndex,
                     canvas,
+                    requestedZoom,
+                    _handlers.IsWindowClosing,
                     token,
                     isPreload: false);
 
@@ -302,7 +304,8 @@ namespace Uviewer.Services
                     return;
                 }
 
-                if (capturedIndex != _imageViewerState.CurrentIndex)
+                if (capturedIndex != _imageViewerState.CurrentIndex ||
+                    requestedZoom != _handlers.GetZoomLevel())
                 {
                     _imageCache.SafeDisposeBitmap(newBitmap);
                     return;
@@ -314,6 +317,7 @@ namespace Uviewer.Services
 
                 _handlers.InvalidateMainCanvas();
                 _handlers.UpdateStatusBar(entry, newBitmap);
+                _imageCache.ReleaseBitmapIfUncached(oldBitmap);
 
                 StartPreload(requestedZoom);
             }

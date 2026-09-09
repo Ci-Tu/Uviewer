@@ -157,7 +157,7 @@ namespace Uviewer.Services
                 using var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
 
                 var (destinationWidth, destinationHeight) =
-                    CalculateRenderDimensions(pdfPage, canvas, zoomLevel);
+                    CalculateRenderDimensions(pdfPage, canvas, zoomLevel, isPreload);
 
                 var options = new PdfPageRenderOptions
                 {
@@ -220,7 +220,8 @@ namespace Uviewer.Services
         private static (uint Width, uint Height) CalculateRenderDimensions(
             PdfPage pdfPage,
             CanvasControl canvas,
-            double zoomLevel)
+            double zoomLevel,
+            bool isPreload = false)
         {
             float currentDpiScale = canvas.Dpi / 96.0f;
             if (currentDpiScale <= 0) currentDpiScale = 1.0f;
@@ -237,10 +238,16 @@ namespace Uviewer.Services
                 ? canvasWidth
                 : canvasHeight * pageAR;
 
-            double targetWidth = visibleWidthInDips * zoomLevel;
-            double minDip = 1920.0 / currentDpiScale;
-            double maxDip = 6016.0 / currentDpiScale;
-            targetWidth = Math.Clamp(targetWidth, minDip, maxDip);
+            // Preloads keep their bounded memory budget. The visible page instead
+            // needs one rendered pixel per physical screen pixel at the current zoom.
+            double targetWidth = isPreload
+                ? Math.Clamp(visibleWidthInDips * zoomLevel, 1920.0 / currentDpiScale, 6016.0 / currentDpiScale)
+                : Math.Max(1920.0, visibleWidthInDips * zoomLevel * currentDpiScale);
+
+            // CanvasBitmap must fit the device texture limit in both dimensions.
+            var device = canvas.Device ?? CanvasDevice.GetSharedDevice();
+            double maxDimension = device.MaximumBitmapSizeInPixels;
+            targetWidth = Math.Min(targetWidth, maxDimension * Math.Min(1.0, pageAR));
 
             double scale = pdfPage.Size.Width > 0
                 ? targetWidth / pdfPage.Size.Width
