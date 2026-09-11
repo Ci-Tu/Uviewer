@@ -89,6 +89,8 @@ namespace Uviewer.Services
             _imageViewer.ImageAreaManipulationStarting += (_, e) => image.ManipulationStarting(e);
             _imageViewer.ImageAreaManipulationDelta += (_, e) => RunAsync(() => image.ManipulationDeltaAsync(e));
             _imageViewer.ImageAreaManipulationCompleted += (_, _) => image.ManipulationCompleted();
+            _imageViewer.ImageAreaPointerEnded += (_, e) => image.PointerEnded(e);
+            _imageViewer.ImageAreaTapped += (_, e) => RunAsync(() => image.TappedAsync(e));
             _imageViewer.OpenFileRequested += (_, _) => RunAsync(_handlers.FileOpenController.OpenFileAsync);
             _imageViewer.MainCanvasCreateResources += _handlers.MainCanvasCreateResources;
             _imageViewer.MainCanvasDraw += _handlers.MainCanvasDraw;

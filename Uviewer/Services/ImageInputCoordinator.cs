@@ -2,6 +2,7 @@ using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Windows.System;
 using Windows.UI.Core;
@@ -16,6 +17,9 @@ namespace Uviewer.Services
         private readonly Func<bool, Task> _navigatePreviousAsync;
         private readonly Func<bool, Task> _navigateNextAsync;
         private readonly Action _applyZoom;
+        private readonly HashSet<uint> _touchPointers = new();
+        private bool _isPinchManipulation;
+        private bool _suppressTouchTap;
 
         public ImageInputCoordinator(
             IImageInputHost host,
@@ -62,10 +66,16 @@ namespace Uviewer.Services
                             _createNavigationContext(),
                             zoomMultiplier,
                             point);
-
-                        e.Handled = true;
-                        return;
                     }
+                    e.Handled = true;
+                    return;
+                }
+
+                if ((_isPinchManipulation && _touchPointers.Count > 0) ||
+                    _host.ImageViewportNavigationService.IsSmoothZoomRunning)
+                {
+                    e.Handled = true;
+                    return;
                 }
 
                 if (_host.CurrentBitmap != null &&
@@ -101,6 +111,7 @@ namespace Uviewer.Services
 
         public void ManipulationStarting(ManipulationStartingRoutedEventArgs e)
         {
+            _isPinchManipulation = _touchPointers.Count > 1;
             e.Container = _host.ImageArea;
             e.Mode = ManipulationModes.All;
         }
@@ -113,14 +124,20 @@ namespace Uviewer.Services
 
                 if (e.Delta.Scale != 1.0f)
                 {
+                    // Keep this latched through translation-only and inertia deltas.
+                    _isPinchManipulation = true;
                     _host.ImageViewportNavigationService.ZoomAtPosition(
                         _createNavigationContext(),
                         e.Delta.Scale,
                         e.Position);
                 }
 
-                await HandleScrollAsync(e.Delta.Translation.X, e.Delta.Translation.Y);
                 e.Handled = true;
+                await _host.ImageViewportNavigationService.HandleScrollAsync(
+                    _createNavigationContext(),
+                    e.Delta.Translation.X,
+                    e.Delta.Translation.Y,
+                    allowPageTransition: !_isPinchManipulation);
             }
             catch (OperationCanceledException) { }
             catch (Exception ex)
@@ -149,6 +166,29 @@ namespace Uviewer.Services
         {
             try
             {
+                // A touch press may be the start of a pinch; navigate only on Tapped.
+                if (e.Pointer.PointerDeviceType == PointerDeviceType.Touch)
+                {
+                    if (_touchPointers.Count == 0)
+                    {
+                        _isPinchManipulation = false;
+                        _suppressTouchTap = false;
+                    }
+                    _touchPointers.Add(e.Pointer.PointerId);
+                    if (_touchPointers.Count > 1)
+                    {
+                        _isPinchManipulation = true;
+                        _suppressTouchTap = true;
+                    }
+                    if (_host.WindowShellController.HandleFullscreenPanelPointer(e))
+                    {
+                        _suppressTouchTap = true;
+                        e.Handled = true;
+                        _host.FocusRoot();
+                    }
+                    return;
+                }
+
                 if (_host.WindowShellController.HandleFullscreenPanelPointer(e))
                 {
                     e.Handled = true;
@@ -160,15 +200,8 @@ namespace Uviewer.Services
                     return;
 
                 var point = e.GetCurrentPoint(_host.ImageArea);
-                bool isTouch = e.Pointer.PointerDeviceType == PointerDeviceType.Touch;
-                if (!isTouch && !point.Properties.IsLeftButtonPressed)
+                if (!point.Properties.IsLeftButtonPressed)
                     return;
-
-                if (isTouch)
-                {
-                    if (_host.ZoomLevel > 1.01 || _host.IsPdfMode)
-                        return;
-                }
 
                 double half = _host.ImageArea.ActualWidth * 0.5;
                 if (point.Position.X < half)
@@ -190,6 +223,27 @@ namespace Uviewer.Services
                 System.Diagnostics.Debug.WriteLine($"Error in ImageArea_PointerPressed: {ex.Message}");
                 _host.ShowNotification($"{ex.Message}", "\uE783", "Red");
             }
+        }
+
+        public void PointerEnded(PointerRoutedEventArgs e)
+        {
+            _touchPointers.Remove(e.Pointer.PointerId);
+        }
+
+        public async Task TappedAsync(TappedRoutedEventArgs e)
+        {
+            if (e.PointerDeviceType != PointerDeviceType.Touch || _isPinchManipulation || _suppressTouchTap ||
+                _touchPointers.Count > 1 || _host.ZoomLevel > 1.01 ||
+                _host.IsPdfMode || _host.ImageEntries.Count <= 1)
+                return;
+
+            e.Handled = true;
+            bool isLeft = e.GetPosition(_host.ImageArea).X < _host.ImageArea.ActualWidth * 0.5;
+            if (isLeft != _host.ShouldInvertControls)
+                await _navigatePreviousAsync(true);
+            else
+                await _navigateNextAsync(true);
+            _host.FocusRoot();
         }
     }
 }

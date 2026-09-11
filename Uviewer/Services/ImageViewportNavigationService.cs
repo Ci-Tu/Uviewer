@@ -147,7 +147,8 @@ namespace Uviewer.Services
         public async Task HandleScrollAsync(
             ImageViewportNavigationContext context,
             double deltaX,
-            double deltaY)
+            double deltaY,
+            bool allowPageTransition = true)
         {
             var bitmap = context.GetCurrentBitmap();
             bool isPdfMode = context.IsPdfMode();
@@ -167,6 +168,14 @@ namespace Uviewer.Services
 
                 var scaledSize = ZoomService.CalculateScaledSize(canvasSize, imageSize, zoomLevel);
                 PanX = ClampHorizontalPan(PanX + deltaX, scaledSize.Width, canvasSize.Width);
+
+                if (!allowPageTransition)
+                {
+                    double maxPanY = GetMaxPanY(scaledSize.Height, canvasSize.Height);
+                    PanY = Math.Clamp(PanY + deltaY, -maxPanY, maxPanY);
+                    context.ApplyZoom();
+                    return;
+                }
 
                 if (deltaY > 0)
                 {

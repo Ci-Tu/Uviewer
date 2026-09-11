@@ -388,6 +388,12 @@ namespace Uviewer.Services
         public void ManipulationCompleted() =>
             _inputCoordinator.ManipulationCompleted();
 
+        public void PointerEnded(PointerRoutedEventArgs e) =>
+            _inputCoordinator.PointerEnded(e);
+
+        public Task TappedAsync(TappedRoutedEventArgs e) =>
+            _inputCoordinator.TappedAsync(e);
+
         public Task HandlePdfScrollAsync(double deltaX, double deltaY) =>
             _inputCoordinator.HandleScrollAsync(deltaX, deltaY);
 
