@@ -41,6 +41,9 @@ namespace Uviewer.Services
 
         internal int PdfSelectionPageIndex => _pdfTextSelection.SelectionPageIndex;
 
+        internal void SyncPdfTextSelection(string? pdfPath, int pageIndex) =>
+            _pdfTextSelection.SyncDocument(pdfPath, pageIndex);
+
         public void PointerMoved(PointerRoutedEventArgs e)
         {
             if (!_pdfTextSelection.IsDragging) return;

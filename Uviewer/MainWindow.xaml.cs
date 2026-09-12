@@ -728,6 +728,8 @@ namespace Uviewer
                 _activePdfSearchHighlights,
                 _activePdfSearchMatchIndex);
 
+            _imageViewerController.SyncPdfTextSelection(_currentPdfPath, _currentIndex);
+
             PdfTextSelectionRenderer.Draw(
                 sender,
                 args,

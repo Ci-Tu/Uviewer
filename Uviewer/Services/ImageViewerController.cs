@@ -410,6 +410,9 @@ namespace Uviewer.Services
         public int PdfSelectionPageIndex =>
             _inputCoordinator.PdfSelectionPageIndex;
 
+        public void SyncPdfTextSelection(string? pdfPath, int pageIndex) =>
+            _inputCoordinator.SyncPdfTextSelection(pdfPath, pageIndex);
+
         public void ClearImageResources()
         {
             _bitmapLifetimeCoordinator.ClearImageResources();

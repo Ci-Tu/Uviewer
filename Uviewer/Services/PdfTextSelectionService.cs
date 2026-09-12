@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using UglyToad.PdfPig.Content;
 using Windows.Foundation;
@@ -14,6 +15,9 @@ namespace Uviewer.Services
         public List<Letter?> Letters { get; init; } = new();
         public double PageWidth { get; init; }
         public double PageHeight { get; init; }
+
+        /// <summary>컬럼/줄 기준 읽기 순서 정보입니다. 컬럼 단위 선택 제한에 사용됩니다.</summary>
+        public PdfSelectionLayout Layout { get; init; } = PdfSelectionLayout.Empty;
     }
 
     /// <summary>
@@ -30,6 +34,8 @@ namespace Uviewer.Services
         private string? _mapPassword;
         private int _mapPageIndex = -1;
         private int _mapGeneration;
+
+        private string? _selectionPath;
 
         private Point _startPoint;
 
@@ -61,6 +67,8 @@ namespace Uviewer.Services
             AnchorIndex = -1;
             FocusIndex = -1;
             _highlights.Clear();
+            _selectionPath = _host.CurrentPdfPath;
+            SelectionPageIndex = _host.CurrentPdfPageIndex;
             _startPoint = canvasPoint;
             _ = BeginSelectionCoreAsync();
         }
@@ -75,6 +83,7 @@ namespace Uviewer.Services
                 int pageIndex = _host.CurrentPdfPageIndex;
                 var map = await EnsureMapAsync(path, pageIndex);
                 if (map == null || !IsDragging) return;
+                if (!string.Equals(path, _host.CurrentPdfPath, StringComparison.OrdinalIgnoreCase)) return;
                 if (pageIndex != _host.CurrentPdfPageIndex) return;
                 if (!TryMapPointToPdf(_startPoint, map, out double x, out double y)) return;
 
@@ -85,6 +94,7 @@ namespace Uviewer.Services
                 FocusIndex = index;
                 HasSelection = true;
                 SelectionPageIndex = pageIndex;
+                _selectionPath = path;
                 UpdateHighlights(map);
                 _host.MainCanvas?.Invalidate();
             }
@@ -130,12 +140,37 @@ namespace Uviewer.Services
 
         public void Cancel()
         {
+            ResetSelection();
+            _host.MainCanvas?.Invalidate();
+        }
+
+        /// <summary>
+        /// 현재 표시 중인 PDF 문서/페이지와 선택 상태를 동기화합니다.
+        /// 다른 파일을 열거나 페이지가 바뀌어 선택이 더 이상 유효하지 않으면 오버레이를 지웁니다.
+        /// (그리기 도중 호출되므로 다시 그리기를 요청하지 않습니다.)
+        /// </summary>
+        public void SyncDocument(string? pdfPath, int pageIndex)
+        {
+            if (!IsDragging && !HasSelection && _selectionPath == null) return;
+
+            if (string.Equals(_selectionPath, pdfPath, StringComparison.OrdinalIgnoreCase) &&
+                SelectionPageIndex == pageIndex)
+            {
+                return;
+            }
+
+            ResetSelection();
+        }
+
+        private void ResetSelection()
+        {
             IsDragging = false;
             HasSelection = false;
             AnchorIndex = -1;
             FocusIndex = -1;
+            SelectionPageIndex = -1;
+            _selectionPath = null;
             _highlights.Clear();
-            _host.MainCanvas?.Invalidate();
         }
 
         private async Task<PdfTextSelectionMap?> EnsureMapAsync(string path, int pageIndex)
@@ -159,12 +194,14 @@ namespace Uviewer.Services
                     using var document = PdfPigDocumentFactory.Open(mapPath, password);
                     var page = document.GetPage(mapPageIndex + 1);
                     var (text, letters) = SearchHighlightService.BuildPdfTextMap(page);
+                    double pageWidth = Math.Max(1.0, page.Width);
                     return new PdfTextSelectionMap
                     {
                         Text = text,
                         Letters = letters,
-                        PageWidth = Math.Max(1.0, page.Width),
-                        PageHeight = Math.Max(1.0, page.Height)
+                        PageWidth = pageWidth,
+                        PageHeight = Math.Max(1.0, page.Height),
+                        Layout = PdfSelectionLayoutBuilder.Build(letters, pageWidth)
                     };
                 }
                 catch (Exception ex)
@@ -259,17 +296,107 @@ namespace Uviewer.Services
             return bestIndex;
         }
 
+        /// <summary>
+        /// 앵커와 포커스 사이에서 실제로 선택되는 문자 맵 인덱스 목록을 반환합니다.
+        /// 컬럼이 감지된 페이지에서는 컬럼 → 줄 → X 읽기 순서를 사용하고,
+        /// 드래그한 세로 범위 밖(다른 컬럼 영역 등)의 문자는 제외합니다.
+        /// </summary>
+        private List<int> BuildSelectedIndices(PdfTextSelectionMap map)
+        {
+            var selected = new List<int>();
+            if (AnchorIndex < 0 || FocusIndex < 0) return selected;
+
+            var layout = map.Layout;
+            bool hasLayout =
+                layout.HasReadingOrder &&
+                layout.OrderPosition.Length == map.Letters.Count &&
+                AnchorIndex < map.Letters.Count &&
+                FocusIndex < map.Letters.Count;
+
+            int anchorPosition = hasLayout ? layout.OrderPosition[AnchorIndex] : -1;
+            int focusPosition = hasLayout ? layout.OrderPosition[FocusIndex] : -1;
+
+            if (anchorPosition < 0 || focusPosition < 0)
+            {
+                // 레이아웃 정보가 없으면 기존 방식(맵 순서 범위)으로 대체합니다.
+                int fallbackStart = Math.Max(0, Math.Min(AnchorIndex, FocusIndex));
+                int fallbackEnd = Math.Min(map.Letters.Count - 1, Math.Max(AnchorIndex, FocusIndex));
+                for (int i = fallbackStart; i <= fallbackEnd; i++) selected.Add(i);
+                return selected;
+            }
+
+            int startPosition = Math.Min(anchorPosition, focusPosition);
+            int endPosition = Math.Max(anchorPosition, focusPosition);
+
+            int firstLine = Math.Min(layout.LineIndex[AnchorIndex], layout.LineIndex[FocusIndex]);
+            int lastLine = Math.Max(layout.LineIndex[AnchorIndex], layout.LineIndex[FocusIndex]);
+
+            for (int position = startPosition; position <= endPosition; position++)
+            {
+                int index = layout.ReadingOrder[position];
+                int line = layout.LineIndex[index];
+
+                // 다른 컬럼으로 드래그해도 드래그한 세로 범위의 텍스트만 선택합니다.
+                if (line < firstLine || line > lastLine) continue;
+
+                selected.Add(index);
+            }
+
+            return selected;
+        }
+
+        private static void AppendSpace(StringBuilder sb)
+        {
+            if (sb.Length == 0 || sb[^1] == ' ') return;
+            sb.Append(' ');
+        }
+
         private string ExtractSelectedText()
         {
             var map = _map;
             if (map == null || AnchorIndex < 0 || FocusIndex < 0) return string.Empty;
 
-            int start = Math.Min(AnchorIndex, FocusIndex);
-            int end = Math.Max(AnchorIndex, FocusIndex);
-            if (start >= map.Text.Length) return string.Empty;
+            if (!map.Layout.HasReadingOrder)
+            {
+                int fallbackStart = Math.Min(AnchorIndex, FocusIndex);
+                int fallbackEnd = Math.Max(AnchorIndex, FocusIndex);
+                if (fallbackStart >= map.Text.Length) return string.Empty;
 
-            end = Math.Min(end, map.Text.Length - 1);
-            return map.Text.Substring(start, end - start + 1).Trim();
+                fallbackEnd = Math.Min(fallbackEnd, map.Text.Length - 1);
+                return map.Text.Substring(fallbackStart, fallbackEnd - fallbackStart + 1).Trim();
+            }
+
+            var selected = BuildSelectedIndices(map);
+            if (selected.Count == 0) return string.Empty;
+
+            var layout = map.Layout;
+            var sb = new StringBuilder(selected.Count + 8);
+            Letter? previous = null;
+            int previousLine = -1;
+
+            foreach (int index in selected)
+            {
+                if (index < 0 || index >= map.Letters.Count || index >= map.Text.Length) continue;
+
+                var letter = map.Letters[index];
+                if (letter == null) continue;
+
+                int line = layout.LineIndex[index];
+                if (sb.Length > 0 &&
+                    (line != previousLine || (previous != null && SearchHighlightService.ShouldInsertPdfSpace(previous, letter))))
+                {
+                    AppendSpace(sb);
+                }
+
+                char c = map.Text[index];
+                if (char.IsWhiteSpace(c)) AppendSpace(sb);
+                else sb.Append(c);
+
+                previous = letter;
+                previousLine = line;
+            }
+
+            return sb.ToString().Trim();
         }
 
         private void UpdateHighlights(PdfTextSelectionMap map)
@@ -277,13 +404,12 @@ namespace Uviewer.Services
             _highlights.Clear();
             if (AnchorIndex < 0 || FocusIndex < 0) return;
 
-            int start = Math.Min(AnchorIndex, FocusIndex);
-            int end = Math.Max(AnchorIndex, FocusIndex);
-
             var letters = new List<Letter>();
-            for (int i = start; i <= end && i < map.Letters.Count; i++)
+            foreach (int index in BuildSelectedIndices(map))
             {
-                var letter = map.Letters[i];
+                if (index < 0 || index >= map.Letters.Count) continue;
+
+                var letter = map.Letters[index];
                 if (letter != null) letters.Add(letter);
             }
 

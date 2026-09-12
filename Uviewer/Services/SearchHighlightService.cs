@@ -575,8 +575,10 @@ namespace Uviewer.Services
 
         private static List<List<Letter>> BuildPdfLetterLines(Page page)
         {
+            // 공백 글리프를 지우면 한글 PDF의 단어 사이 공백이 복원되지 않고 사라진다.
+            // 빈 값과 제어 문자만 담긴 글리프만 제외하고, 공백 문자는 위치 정보가 유효하므로 유지한다.
             var letters = page.Letters
-                .Where(letter => !string.IsNullOrWhiteSpace(letter.Value))
+                .Where(letter => !IsIgnorableLetterValue(letter.Value))
                 .OrderByDescending(letter => letter.StartBaseLine.Y)
                 .ThenBy(letter => letter.StartBaseLine.X)
                 .ToList();
@@ -601,6 +603,19 @@ namespace Uviewer.Services
             }
 
             return lines;
+        }
+
+        /// <summary>빈 값이거나 제어 문자(줄바꿈/탭 등)만 담긴 글리프인지 확인합니다. 공백 문자는 유지합니다.</summary>
+        private static bool IsIgnorableLetterValue(string? value)
+        {
+            if (string.IsNullOrEmpty(value)) return true;
+
+            foreach (char c in value)
+            {
+                if (!char.IsControl(c)) return false;
+            }
+
+            return true;
         }
 
         /// <summary>문자들을 기준선(baseline) 단위로 줄 묶음으로 그룹화합니다.</summary>
@@ -666,15 +681,48 @@ namespace Uviewer.Services
             return output.ToString();
         }
 
-        private static bool ShouldInsertPdfSpace(Letter previous, Letter current)
+        internal static bool ShouldInsertPdfSpace(Letter previous, Letter current)
         {
             double gap = current.StartBaseLine.X - previous.EndBaseLine.X;
             if (gap <= 0) return false;
 
             double previousWidth = Math.Max(0.1, previous.Width);
             double previousHeight = Math.Max(0.1, previous.GlyphRectangleLoose.Height);
+
+            if (IsWideCjkLetter(previous.Value) || IsWideCjkLetter(current.Value))
+            {
+                // 한글/한자/가나 글리프는 폭이 1em에 가까워 45% 폭 기준으로는
+                // 단어 사이의 좁은 공백(약 0.2em)을 놓친다. CJK 구간은 em 기준으로 판단한다.
+                double emWidth = Math.Max(previousWidth, Math.Max(Math.Max(0.1, current.Width), previousHeight * 0.75));
+                return gap > Math.Max(0.6, emWidth * 0.18);
+            }
+
             double threshold = Math.Max(1.5, Math.Max(previousWidth * 0.45, previousHeight * 0.25));
             return gap > threshold;
+        }
+
+        /// <summary>한글/한자/가나 등 폭이 넓은 CJK 문자인지 확인합니다.</summary>
+        private static bool IsWideCjkLetter(string? value)
+        {
+            if (string.IsNullOrEmpty(value)) return false;
+
+            foreach (char c in value)
+            {
+                if ((c >= '\u1100' && c <= '\u11FF') ||
+                    (c >= '\u2E80' && c <= '\u303F') ||
+                    (c >= '\u3040' && c <= '\u30FF') ||
+                    (c >= '\u3130' && c <= '\u318F') ||
+                    (c >= '\u3400' && c <= '\u4DBF') ||
+                    (c >= '\u4E00' && c <= '\u9FFF') ||
+                    (c >= '\uAC00' && c <= '\uD7A3') ||
+                    (c >= '\uF900' && c <= '\uFAFF') ||
+                    (c >= '\uFF00' && c <= '\uFFEF'))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static double CalculatePdfLineTolerance(IReadOnlyList<Letter> letters)
