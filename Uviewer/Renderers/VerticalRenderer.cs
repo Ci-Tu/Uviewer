@@ -142,7 +142,7 @@ namespace Uviewer.Renderers
         /// <summary>
         /// Aozora 블록 리스트를 세로 모드로 캔버스에 렌더링합니다.
         /// </summary>
-        public static void RenderBlocks(
+        internal static void RenderBlocks(
             CanvasDrawingSession ds,
             List<AozoraBindingModel> blocks,
             Color textColor,
@@ -157,7 +157,9 @@ namespace Uviewer.Renderers
             string? searchQuery = null,
             DocumentSearchMatch? currentSearchMatch = null,
             DocumentSearchKind renderedSearchKind = DocumentSearchKind.Text,
-            int firstBlockIndex = -1)
+            int firstBlockIndex = -1,
+            CanvasTextGeometry? selectionGeometry = null,
+            IReadOnlyList<CanvasTextRange>? selectionRanges = null)
         {
             float currentX = (float)canvasSize.Width - marginRight; 
             float startY = marginTop;
@@ -255,7 +257,8 @@ namespace Uviewer.Renderers
 
                 float indentY = (float)(block.BlockIndentChars * fontSize);
                 float actualDrawHeight = Math.Max(fontSize, drawHeight - indentY);
-                using var textLayout = new CanvasTextLayout(ds, blockText, format, measureWidth, actualDrawHeight);
+                var textLayout = new CanvasTextLayout(ds, blockText, format, measureWidth, actualDrawHeight);
+                bool layoutRetained = false;
                 ApplyVerticalBracketSpacing(ds, format, textLayout, blockText, fontSize);
                 
                 if (block.IsBold) textLayout.SetFontWeight(0, blockText.Length, FontWeights.Bold);
@@ -339,7 +342,36 @@ namespace Uviewer.Renderers
                         fontSize);
                 }
 
+                if (selectionRanges != null && selectionRanges.Count > 0)
+                {
+                    var blockSelectionRanges = new List<(int start, int length)>();
+                    foreach (var range in selectionRanges)
+                    {
+                        if (range.BlockIndex == i && range.Length > 0)
+                        {
+                            blockSelectionRanges.Add((range.Start, range.Length));
+                        }
+                    }
+
+                    if (blockSelectionRanges.Count > 0)
+                    {
+                        DrawRangeBackgrounds(
+                            ds,
+                            textLayout,
+                            blockSelectionRanges,
+                            drawX,
+                            drawY,
+                            TextSelectionVisuals.SelectionColor,
+                            fontSize);
+                    }
+                }
+
                 ds.DrawTextLayout(textLayout, drawX, drawY, textColor);
+                if (selectionGeometry != null)
+                {
+                    selectionGeometry.AddBlock(i, blockText, drawX, drawY, fontSize, textLayout);
+                    layoutRetained = true;
+                }
 
                 using var rubyFormat = new CanvasTextFormat
                 {
@@ -388,6 +420,11 @@ namespace Uviewer.Renderers
                 {
                     ds.DrawTextLayout(info.Layout, info.X, info.Y, textColor);
                     info.Layout.Dispose(); 
+                }
+
+                if (!layoutRetained)
+                {
+                    textLayout.Dispose();
                 }
 
                 float spacing = fontSize * (block.IsBlankLine ? 0.2f : 0.6f) + (float)block.Margin.Bottom; 

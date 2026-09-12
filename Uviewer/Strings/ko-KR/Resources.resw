@@ -700,4 +700,5 @@
   <data name="ExplorerFilterFolders" xml:space="preserve"><value>폴더</value></data>
   <data name="ExplorerFilterClear" xml:space="preserve"><value>필터 초기화 (Esc)</value></data>
   <data name="ExplorerFilterNoMatches" xml:space="preserve"><value>필터에 맞는 항목이 없습니다.</value></data>
+  <data name="TextSelectionCopied" xml:space="preserve"><value>클립보드에 복사되었습니다</value></data>
 </root>

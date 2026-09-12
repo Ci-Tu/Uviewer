@@ -1103,12 +1103,27 @@ namespace Uviewer
             {
                 var line = _textLines[args.Index];
                 _textLinePresenterService.ApplyToTextBlock(tb, line, args.Index + 1, ApplySearchHighlightsToTextBlock);
+                ApplyPlainTextSelectionHighlight(tb, args.Index, line);
             }
         }
         // --- Input Handling ---
 
         internal void TextArea_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
+            // Ctrl+드래그: 일반 텍스트 선택 (선택 완료 시 자동으로 클립보드에 복사)
+            if (TryBeginPlainTextSelection(e))
+            {
+                e.Handled = true;
+                RootGrid.Focus(FocusState.Programmatic);
+                return;
+            }
+
+            // 일반 클릭(페이지 탐색) 시 이전 선택 하이라이트를 지웁니다.
+            if (_plainTextSelection.HasAnchor && !CanvasTextSelectionHelper.IsControlKeyDown())
+            {
+                ClearPlainTextSelection();
+            }
+
             // Use unified touch handler (Next/Prev + Fullscreen Edge UI)
             var ptr = e.GetCurrentPoint(RootGrid);
             bool isTouch = e.Pointer.PointerDeviceType == Microsoft.UI.Input.PointerDeviceType.Touch;

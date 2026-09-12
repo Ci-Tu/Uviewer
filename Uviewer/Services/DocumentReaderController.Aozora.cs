@@ -913,7 +913,11 @@ namespace Uviewer
 
             ds.Clear(GetVerticalBackgroundColor());
 
-            if (_currentAozoraPageInfo.Blocks == null || _currentAozoraPageInfo.Blocks.Count == 0) return;
+            if (_currentAozoraPageInfo.Blocks == null || _currentAozoraPageInfo.Blocks.Count == 0)
+            {
+                ClearAozoraSelection();
+                return;
+            }
 
             var page = _currentAozoraPageInfo;
 
@@ -924,10 +928,15 @@ namespace Uviewer
             var imgBlocks = page.Blocks.Where(b => b.HasImage).ToList();
             if (imgBlocks.Count > 0)
             {
+                ClearAozoraSelection();
                 var src = imgBlocks[0].Inlines.OfType<AozoraImage>().First().Source;
                 DrawHorizontalImage(ds, size, src);
                 return;
             }
+
+            var pageToken = (object)page.Blocks;
+            var selectionRanges = CanvasTextSelectionHelper.BuildRangesForDraw(_aozoraSelection, _aozoraSelectionGeometry, pageToken);
+            var selectionGeometry = new CanvasTextGeometry(pageToken);
 
             // ⭐ 새로 분리된 통합 렌더러 호출!
             HorizontalRenderer.RenderBlocks(
@@ -943,14 +952,25 @@ namespace Uviewer
                 searchQuery: _activeSearchQuery,
                 currentSearchMatch: GetActiveSearchMatchFor(DocumentSearchKind.Text),
                 renderedSearchKind: DocumentSearchKind.Text,
-                firstBlockIndex: _currentAozoraStartBlockIndex
+                firstBlockIndex: _currentAozoraStartBlockIndex,
+                selectionGeometry: selectionGeometry,
+                selectionRanges: selectionRanges
             );
+
+            CanvasTextSelectionHelper.ApplyGeometry(ref _aozoraSelectionGeometry, selectionGeometry, _aozoraSelection, pageToken);
         }
 
         internal void AozoraTextCanvas_PointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
             if (AozoraTextCanvas == null || !_isAozoraMode) return;
             if (_windowShellController.HandleFullscreenPanelPointer(e))
+            {
+                e.Handled = true;
+                RootGrid.Focus(FocusState.Programmatic);
+                return;
+            }
+
+            if (TryBeginAozoraTextSelection(e))
             {
                 e.Handled = true;
                 RootGrid.Focus(FocusState.Programmatic);

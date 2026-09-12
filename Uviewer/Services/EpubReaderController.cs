@@ -22,7 +22,7 @@ using Windows.UI.Text;
 
 namespace Uviewer.Services
 {
-    internal sealed class EpubReaderController
+    internal sealed partial class EpubReaderController
     {
         private readonly IEpubReaderHost _host;
 
@@ -814,10 +814,22 @@ namespace Uviewer.Services
             ds.Clear(bgColor);
 
             var pg = CurrentEpubWin2DPage;
-            if (pg == null || pg.Blocks == null || pg.Blocks.Count == 0) return;
+            if (pg == null || pg.Blocks == null || pg.Blocks.Count == 0)
+            {
+                ClearEpubSelection();
+                return;
+            }
 
             // 이미지 페이지는 EpubImageHost에서 처리하므로 넘김
-            if (pg.IsImagePage) return;
+            if (pg.IsImagePage)
+            {
+                ClearEpubSelection();
+                return;
+            }
+
+            var pageToken = (object)pg.Blocks;
+            var selectionRanges = CanvasTextSelectionHelper.BuildRangesForDraw(_epubSelection, _epubSelectionGeometry, pageToken);
+            var selectionGeometry = new CanvasTextGeometry(pageToken);
 
             if (_isVerticalMode)
             {
@@ -838,7 +850,9 @@ namespace Uviewer.Services
                     searchQuery: _activeSearchQuery,
                     currentSearchMatch: GetActiveSearchMatchFor(DocumentSearchKind.Epub),
                     renderedSearchKind: DocumentSearchKind.Epub,
-                    firstBlockIndex: pg.StartBlockIndex
+                    firstBlockIndex: pg.StartBlockIndex,
+                    selectionGeometry: selectionGeometry,
+                    selectionRanges: selectionRanges
                 );
             }
             else
@@ -860,9 +874,13 @@ namespace Uviewer.Services
                     searchQuery: _activeSearchQuery,
                     currentSearchMatch: GetActiveSearchMatchFor(DocumentSearchKind.Epub),
                     renderedSearchKind: DocumentSearchKind.Epub,
-                    firstBlockIndex: pg.StartBlockIndex
+                    firstBlockIndex: pg.StartBlockIndex,
+                    selectionGeometry: selectionGeometry,
+                    selectionRanges: selectionRanges
                 );
             }
+
+            CanvasTextSelectionHelper.ApplyGeometry(ref _epubSelectionGeometry, selectionGeometry, _epubSelection, pageToken);
         }
 
 
@@ -872,6 +890,13 @@ namespace Uviewer.Services
             {
                 if (!_isEpubMode) return;
                 if (_host.WindowShellController.HandleFullscreenPanelPointer(e))
+                {
+                    e.Handled = true;
+                    RootGrid.Focus(Microsoft.UI.Xaml.FocusState.Programmatic);
+                    return;
+                }
+
+                if (TryBeginEpubTextSelection(e))
                 {
                     e.Handled = true;
                     RootGrid.Focus(Microsoft.UI.Xaml.FocusState.Programmatic);

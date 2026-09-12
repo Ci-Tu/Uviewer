@@ -292,5 +292,6 @@ namespace Uviewer
         public static string WebDavRecentOpenFailed(string msg) => string.Format(GetString("WebDavRecentOpenFailed"), msg);
         public static string ChapterNumber(int number) => string.Format(GetString("ChapterNumber"), number);
         public static string FileTypeDescription(string extension) => string.Format(GetString("FileTypeDescription"), extension);
+        public static string TextSelectionCopied => GetString("TextSelectionCopied");
     }
 }

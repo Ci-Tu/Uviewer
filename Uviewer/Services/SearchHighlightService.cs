@@ -508,7 +508,8 @@ namespace Uviewer.Services
             }
         }
 
-        private static (string Text, List<Letter?> Letters) BuildPdfTextMap(Page page)
+        /// <summary>PDF 페이지의 문자/좌표 맵을 만듭니다. (검색 하이라이트와 텍스트 선택에서 공용 사용)</summary>
+        public static (string Text, List<Letter?> Letters) BuildPdfTextMap(Page page)
         {
             var lineMaps = BuildPdfLineTextMaps(page);
             if (lineMaps.Count == 0) return (string.Empty, new List<Letter?>());
@@ -602,7 +603,8 @@ namespace Uviewer.Services
             return lines;
         }
 
-        private static IReadOnlyList<IReadOnlyList<Letter>> GroupLettersByLine(IReadOnlyList<Letter> letters)
+        /// <summary>문자들을 기준선(baseline) 단위로 줄 묶음으로 그룹화합니다.</summary>
+        internal static IReadOnlyList<IReadOnlyList<Letter>> GroupLettersByLine(IReadOnlyList<Letter> letters)
         {
             if (letters.Count == 0) return Array.Empty<IReadOnlyList<Letter>>();
 

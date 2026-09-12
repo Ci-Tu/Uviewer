@@ -25,20 +25,7 @@ namespace Uviewer.Renderers
         {
             if (!hasPdfDocument || currentBitmap == null) return;
             if (activeSearchPageIndex != currentPageIndex || highlights.Count == 0) return;
-            if (!CanvasBitmapHelper.TryGetBitmapSize(currentBitmap, out var imageSize)) return;
-
-            var canvasSize = sender.Size;
-            if (canvasSize.Width <= 0 || canvasSize.Height <= 0) return;
-
-            double fitRatio = Math.Min(canvasSize.Width / imageSize.Width, canvasSize.Height / imageSize.Height);
-            var scaledSize = new Size(
-                imageSize.Width * fitRatio * zoomLevel,
-                imageSize.Height * fitRatio * zoomLevel);
-            var pageRect = new Rect(
-                (canvasSize.Width - scaledSize.Width) / 2 + panX,
-                (canvasSize.Height - scaledSize.Height) / 2 + panY,
-                scaledSize.Width,
-                scaledSize.Height);
+            if (!PdfPageLayout.TryGetPageRect(currentBitmap, sender.Size, zoomLevel, panX, panY, out var pageRect)) return;
 
             foreach (var highlight in highlights)
             {

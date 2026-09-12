@@ -700,4 +700,5 @@
   <data name="ExplorerFilterFolders" xml:space="preserve"><value>フォルダー</value></data>
   <data name="ExplorerFilterClear" xml:space="preserve"><value>絞り込みを解除 (Esc)</value></data>
   <data name="ExplorerFilterNoMatches" xml:space="preserve"><value>条件に一致する項目はありません。</value></data>
+  <data name="TextSelectionCopied" xml:space="preserve"><value>クリップボードにコピーしました</value></data>
 </root>

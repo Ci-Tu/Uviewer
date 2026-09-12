@@ -58,6 +58,9 @@ namespace Uviewer.Services
         bool IsCurrentViewSideBySide { get; }
         bool IsPdfMode { get; }
         bool ShouldInvertControls { get; }
+        string? CurrentPdfPath { get; }
+        string? CurrentPdfPassword { get; }
+        int CurrentPdfPageIndex { get; }
         double LastCanvasWidth { get; set; }
 
         CanvasControl MainCanvas { get; }

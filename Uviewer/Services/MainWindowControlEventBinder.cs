@@ -86,6 +86,7 @@ namespace Uviewer.Services
             _imageViewer.ImageAreaSizeChanged += (_, e) => image.ImageAreaSizeChanged(e);
             _imageViewer.ImageAreaPointerWheelChanged += (_, e) => RunAsync(() => image.HandlePointerWheelAsync(e));
             _imageViewer.ImageAreaPointerPressed += (_, e) => RunAsync(() => image.PointerPressedAsync(e));
+            _imageViewer.ImageAreaPointerMoved += (_, e) => image.PointerMoved(e);
             _imageViewer.ImageAreaManipulationStarting += (_, e) => image.ManipulationStarting(e);
             _imageViewer.ImageAreaManipulationDelta += (_, e) => RunAsync(() => image.ManipulationDeltaAsync(e));
             _imageViewer.ImageAreaManipulationCompleted += (_, _) => image.ManipulationCompleted();
@@ -106,6 +107,8 @@ namespace Uviewer.Services
 
             _textReader.TextItemsRepeaterElementPrepared += reader.TextItemsRepeater_ElementPrepared;
             _textReader.TextAreaPointerPressed += reader.TextArea_PointerPressed;
+            _textReader.TextAreaPointerMoved += reader.TextArea_PointerMoved;
+            _textReader.TextAreaPointerReleased += reader.TextArea_PointerReleased;
             _textReader.TextAreaPointerWheelChanged += reader.TextArea_PointerWheelChanged;
             _textReader.TextAreaSizeChanged += reader.TextArea_SizeChanged;
             _textReader.TextScrollViewerViewChanged += reader.TextScrollViewer_ViewChanged;
@@ -113,11 +116,15 @@ namespace Uviewer.Services
             _textReader.AozoraTextCanvasCreateResources += reader.AozoraTextCanvas_CreateResources;
             _textReader.AozoraTextCanvasDraw += reader.AozoraTextCanvas_Draw;
             _textReader.AozoraTextCanvasPointerPressed += reader.AozoraTextCanvas_PointerPressed;
+            _textReader.AozoraTextCanvasPointerMoved += reader.AozoraTextCanvas_PointerMoved;
+            _textReader.AozoraTextCanvasPointerReleased += reader.AozoraTextCanvas_PointerReleased;
             _textReader.AozoraTextCanvasPointerWheelChanged += reader.AozoraTextCanvas_PointerWheelChanged;
             _textReader.AozoraTextCanvasSizeChanged += reader.AozoraTextCanvas_SizeChanged;
             _textReader.VerticalTextCanvasCreateResources += reader.VerticalTextCanvas_CreateResources;
             _textReader.VerticalTextCanvasDraw += reader.VerticalTextCanvas_Draw;
             _textReader.VerticalTextCanvasPointerPressed += reader.VerticalTextCanvas_PointerPressed;
+            _textReader.VerticalTextCanvasPointerMoved += reader.VerticalTextCanvas_PointerMoved;
+            _textReader.VerticalTextCanvasPointerReleased += reader.VerticalTextCanvas_PointerReleased;
             _textReader.VerticalTextCanvasPointerWheelChanged += reader.VerticalTextCanvas_PointerWheelChanged;
             _textReader.VerticalTextCanvasSizeChanged += reader.VerticalTextCanvas_SizeChanged;
         }
@@ -134,6 +141,8 @@ namespace Uviewer.Services
             _epubReader.EpubCanvasDisplayLeftDraw += epub.EpubCanvasDisplayLeft_Draw;
             _epubReader.EpubCanvasDisplayRightDraw += epub.EpubCanvasDisplayRight_Draw;
             _epubReader.EpubTouchOverlayPointerPressed += epub.EpubTouchOverlay_PointerPressed;
+            _epubReader.EpubTouchOverlayPointerMoved += epub.EpubTouchOverlay_PointerMoved;
+            _epubReader.EpubTouchOverlayPointerReleased += epub.EpubTouchOverlay_PointerReleased;
             _epubReader.EpubTouchOverlayPointerWheelChanged += epub.EpubTouchOverlay_PointerWheelChanged;
         }
 

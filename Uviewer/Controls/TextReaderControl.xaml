@@ -20,6 +20,10 @@
           Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
           IsTabStop="False"
           PointerPressed="TextArea_PointerPressed"
+          PointerMoved="TextArea_PointerMoved"
+          PointerReleased="TextArea_PointerReleased"
+          PointerCanceled="TextArea_PointerReleased"
+          PointerCaptureLost="TextArea_PointerReleased"
           PointerWheelChanged="TextArea_PointerWheelChanged"
           SizeChanged="TextArea_SizeChanged">
         <ScrollViewer x:Name="TextScrollViewer"
@@ -45,6 +49,10 @@
                               Draw="AozoraTextCanvas_Draw"
                               CreateResources="AozoraTextCanvas_CreateResources"
                               PointerPressed="AozoraTextCanvas_PointerPressed"
+                              PointerMoved="AozoraTextCanvas_PointerMoved"
+                              PointerReleased="AozoraTextCanvas_PointerReleased"
+                              PointerCanceled="AozoraTextCanvas_PointerReleased"
+                              PointerCaptureLost="AozoraTextCanvas_PointerReleased"
                               PointerWheelChanged="AozoraTextCanvas_PointerWheelChanged"
                               SizeChanged="AozoraTextCanvas_SizeChanged" />
 
@@ -70,6 +78,10 @@
                               Draw="VerticalTextCanvas_Draw"
                               CreateResources="VerticalTextCanvas_CreateResources"
                               PointerPressed="VerticalTextCanvas_PointerPressed"
+                              PointerMoved="VerticalTextCanvas_PointerMoved"
+                              PointerReleased="VerticalTextCanvas_PointerReleased"
+                              PointerCanceled="VerticalTextCanvas_PointerReleased"
+                              PointerCaptureLost="VerticalTextCanvas_PointerReleased"
                               PointerWheelChanged="VerticalTextCanvas_PointerWheelChanged"
                               SizeChanged="VerticalTextCanvas_SizeChanged" />
     </Grid>

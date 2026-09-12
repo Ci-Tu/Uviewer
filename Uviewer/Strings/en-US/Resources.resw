@@ -700,4 +700,5 @@
   <data name="ExplorerFilterFolders" xml:space="preserve"><value>Folders</value></data>
   <data name="ExplorerFilterClear" xml:space="preserve"><value>Clear filters (Esc)</value></data>
   <data name="ExplorerFilterNoMatches" xml:space="preserve"><value>No items match the filters.</value></data>
+  <data name="TextSelectionCopied" xml:space="preserve"><value>Copied to clipboard</value></data>
 </root>

@@ -56,6 +56,10 @@
               AllowFocusOnInteraction="True"
               IsTabStop="True"
               PointerPressed="EpubTouchOverlay_PointerPressed"
+              PointerMoved="EpubTouchOverlay_PointerMoved"
+              PointerReleased="EpubTouchOverlay_PointerReleased"
+              PointerCanceled="EpubTouchOverlay_PointerReleased"
+              PointerCaptureLost="EpubTouchOverlay_PointerReleased"
               PointerWheelChanged="EpubTouchOverlay_PointerWheelChanged"
               HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch" />

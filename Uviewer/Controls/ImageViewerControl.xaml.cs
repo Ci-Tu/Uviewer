@@ -13,6 +13,7 @@ namespace Uviewer.Controls
         internal event SizeChangedEventHandler? ImageAreaSizeChanged;
         internal event PointerEventHandler? ImageAreaPointerWheelChanged;
         internal event PointerEventHandler? ImageAreaPointerPressed;
+        internal event PointerEventHandler? ImageAreaPointerMoved;
         internal event PointerEventHandler? ImageAreaPointerEnded;
         internal event TappedEventHandler? ImageAreaTapped;
         internal event ManipulationStartingEventHandler? ImageAreaManipulationStarting;
@@ -71,6 +72,9 @@ namespace Uviewer.Controls
 
         private void ImageArea_PointerPressed(object sender, PointerRoutedEventArgs e) =>
             ImageAreaPointerPressed?.Invoke(sender, e);
+
+        private void ImageArea_PointerMoved(object sender, PointerRoutedEventArgs e) =>
+            ImageAreaPointerMoved?.Invoke(sender, e);
 
         private void ImageArea_PointerEnded(object sender, PointerRoutedEventArgs e) =>
             ImageAreaPointerEnded?.Invoke(sender, e);

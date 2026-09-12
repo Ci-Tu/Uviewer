@@ -114,6 +114,9 @@ namespace Uviewer
             public bool IsCurrentViewSideBySide => ImageState.IsCurrentViewSideBySide;
             public bool IsPdfMode => Window._currentPdfDocument != null;
             public bool ShouldInvertControls => Window.ShouldInvertControls;
+            public string? CurrentPdfPath => Window._currentPdfPath;
+            public string? CurrentPdfPassword => Window._pdfDocumentController.CurrentPassword;
+            public int CurrentPdfPageIndex => ImageState.CurrentIndex;
             public double LastCanvasWidth { get => ImageState.LastCanvasWidth; set => ImageState.LastCanvasWidth = value; }
 
             public CanvasControl MainCanvas => Window.MainCanvas;

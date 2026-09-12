@@ -549,7 +549,11 @@ namespace Uviewer
             if (_isEpubMode && (isImgPage || isEmptyPage)) ds.Clear(GetVerticalAppBackgroundColor());
             else ds.Clear(GetVerticalBackgroundColor());
 
-            if (_currentVerticalPageInfo.Blocks == null || _currentVerticalPageInfo.Blocks.Count == 0) return;
+            if (_currentVerticalPageInfo.Blocks == null || _currentVerticalPageInfo.Blocks.Count == 0)
+            {
+                ClearVerticalSelection();
+                return;
+            }
 
             var page = _currentVerticalPageInfo;
             var margins = ReaderPageMargins.VerticalText;
@@ -557,6 +561,7 @@ namespace Uviewer
             var imgBlocks = page.Blocks.Where(b => b.HasImage).ToList();
             if (imgBlocks.Count > 0)
             {
+                ClearVerticalSelection();
                 if (imgBlocks.Count >= 2)
                 {
                     var src1 = imgBlocks[0].Inlines.OfType<AozoraImage>().First().Source;
@@ -570,6 +575,10 @@ namespace Uviewer
                 }
                 return; 
             }
+
+            var pageToken = (object)page.Blocks;
+            var selectionRanges = CanvasTextSelectionHelper.BuildRangesForDraw(_verticalSelection, _verticalSelectionGeometry, pageToken);
+            var selectionGeometry = new CanvasTextGeometry(pageToken);
 
             // ⭐ 세로 모드 통합 렌더러 호출!
             VerticalRenderer.RenderBlocks(
@@ -587,8 +596,12 @@ namespace Uviewer
                 searchQuery: _activeSearchQuery,
                 currentSearchMatch: GetActiveSearchMatchFor(_isEpubMode ? DocumentSearchKind.Epub : DocumentSearchKind.Text),
                 renderedSearchKind: _isEpubMode ? DocumentSearchKind.Epub : DocumentSearchKind.Text,
-                firstBlockIndex: _currentVerticalStartBlockIndex
+                firstBlockIndex: _currentVerticalStartBlockIndex,
+                selectionGeometry: selectionGeometry,
+                selectionRanges: selectionRanges
             );
+
+            CanvasTextSelectionHelper.ApplyGeometry(ref _verticalSelectionGeometry, selectionGeometry, _verticalSelection, pageToken);
         }
 
         internal Color GetVerticalTextColor()
@@ -615,6 +628,13 @@ namespace Uviewer
         {
             if (VerticalTextCanvas == null) return;
             if (_windowShellController.HandleFullscreenPanelPointer(e))
+            {
+                e.Handled = true;
+                RootGrid.Focus(FocusState.Programmatic);
+                return;
+            }
+
+            if (TryBeginVerticalTextSelection(e))
             {
                 e.Handled = true;
                 RootGrid.Focus(FocusState.Programmatic);

@@ -700,4 +700,5 @@
   <data name="ExplorerFilterFolders" xml:space="preserve"><value>資料夾</value></data>
   <data name="ExplorerFilterClear" xml:space="preserve"><value>清除篩選 (Esc)</value></data>
   <data name="ExplorerFilterNoMatches" xml:space="preserve"><value>沒有符合篩選條件的項目。</value></data>
+  <data name="TextSelectionCopied" xml:space="preserve"><value>已複製到剪貼簿</value></data>
 </root>

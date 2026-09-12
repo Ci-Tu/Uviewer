@@ -12,6 +12,8 @@ namespace Uviewer.Controls
     {
         internal event TypedEventHandler<ItemsRepeater, ItemsRepeaterElementPreparedEventArgs>? TextItemsRepeaterElementPrepared;
         internal event PointerEventHandler? TextAreaPointerPressed;
+        internal event PointerEventHandler? TextAreaPointerMoved;
+        internal event PointerEventHandler? TextAreaPointerReleased;
         internal event PointerEventHandler? TextAreaPointerWheelChanged;
         internal event SizeChangedEventHandler? TextAreaSizeChanged;
         internal event TypedEventHandler<ScrollViewer, ScrollViewerViewChangedEventArgs>? TextScrollViewerViewChanged;
@@ -19,11 +21,15 @@ namespace Uviewer.Controls
         internal event TypedEventHandler<CanvasControl, CanvasCreateResourcesEventArgs>? AozoraTextCanvasCreateResources;
         internal event TypedEventHandler<CanvasControl, CanvasDrawEventArgs>? AozoraTextCanvasDraw;
         internal event PointerEventHandler? AozoraTextCanvasPointerPressed;
+        internal event PointerEventHandler? AozoraTextCanvasPointerMoved;
+        internal event PointerEventHandler? AozoraTextCanvasPointerReleased;
         internal event PointerEventHandler? AozoraTextCanvasPointerWheelChanged;
         internal event SizeChangedEventHandler? AozoraTextCanvasSizeChanged;
         internal event TypedEventHandler<CanvasControl, CanvasCreateResourcesEventArgs>? VerticalTextCanvasCreateResources;
         internal event TypedEventHandler<CanvasControl, CanvasDrawEventArgs>? VerticalTextCanvasDraw;
         internal event PointerEventHandler? VerticalTextCanvasPointerPressed;
+        internal event PointerEventHandler? VerticalTextCanvasPointerMoved;
+        internal event PointerEventHandler? VerticalTextCanvasPointerReleased;
         internal event PointerEventHandler? VerticalTextCanvasPointerWheelChanged;
         internal event SizeChangedEventHandler? VerticalTextCanvasSizeChanged;
 
@@ -46,6 +52,12 @@ namespace Uviewer.Controls
         private void TextArea_PointerPressed(object sender, PointerRoutedEventArgs e) =>
             TextAreaPointerPressed?.Invoke(sender, e);
 
+        private void TextArea_PointerMoved(object sender, PointerRoutedEventArgs e) =>
+            TextAreaPointerMoved?.Invoke(sender, e);
+
+        private void TextArea_PointerReleased(object sender, PointerRoutedEventArgs e) =>
+            TextAreaPointerReleased?.Invoke(sender, e);
+
         private void TextArea_PointerWheelChanged(object sender, PointerRoutedEventArgs e) =>
             TextAreaPointerWheelChanged?.Invoke(sender, e);
 
@@ -67,6 +79,12 @@ namespace Uviewer.Controls
         private void AozoraTextCanvas_PointerPressed(object sender, PointerRoutedEventArgs e) =>
             AozoraTextCanvasPointerPressed?.Invoke(sender, e);
 
+        private void AozoraTextCanvas_PointerMoved(object sender, PointerRoutedEventArgs e) =>
+            AozoraTextCanvasPointerMoved?.Invoke(sender, e);
+
+        private void AozoraTextCanvas_PointerReleased(object sender, PointerRoutedEventArgs e) =>
+            AozoraTextCanvasPointerReleased?.Invoke(sender, e);
+
         private void AozoraTextCanvas_PointerWheelChanged(object sender, PointerRoutedEventArgs e) =>
             AozoraTextCanvasPointerWheelChanged?.Invoke(sender, e);
 
@@ -81,6 +99,12 @@ namespace Uviewer.Controls
 
         private void VerticalTextCanvas_PointerPressed(object sender, PointerRoutedEventArgs e) =>
             VerticalTextCanvasPointerPressed?.Invoke(sender, e);
+
+        private void VerticalTextCanvas_PointerMoved(object sender, PointerRoutedEventArgs e) =>
+            VerticalTextCanvasPointerMoved?.Invoke(sender, e);
+
+        private void VerticalTextCanvas_PointerReleased(object sender, PointerRoutedEventArgs e) =>
+            VerticalTextCanvasPointerReleased?.Invoke(sender, e);
 
         private void VerticalTextCanvas_PointerWheelChanged(object sender, PointerRoutedEventArgs e) =>
             VerticalTextCanvasPointerWheelChanged?.Invoke(sender, e);

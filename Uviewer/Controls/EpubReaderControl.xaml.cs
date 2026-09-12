@@ -17,6 +17,8 @@ namespace Uviewer.Controls
         internal event TypedEventHandler<CanvasControl, CanvasDrawEventArgs>? EpubCanvasDisplayLeftDraw;
         internal event TypedEventHandler<CanvasControl, CanvasDrawEventArgs>? EpubCanvasDisplayRightDraw;
         internal event PointerEventHandler? EpubTouchOverlayPointerPressed;
+        internal event PointerEventHandler? EpubTouchOverlayPointerMoved;
+        internal event PointerEventHandler? EpubTouchOverlayPointerReleased;
         internal event PointerEventHandler? EpubTouchOverlayPointerWheelChanged;
 
         public EpubReaderControl()
@@ -57,6 +59,12 @@ namespace Uviewer.Controls
 
         private void EpubTouchOverlay_PointerPressed(object sender, PointerRoutedEventArgs e) =>
             EpubTouchOverlayPointerPressed?.Invoke(sender, e);
+
+        private void EpubTouchOverlay_PointerMoved(object sender, PointerRoutedEventArgs e) =>
+            EpubTouchOverlayPointerMoved?.Invoke(sender, e);
+
+        private void EpubTouchOverlay_PointerReleased(object sender, PointerRoutedEventArgs e) =>
+            EpubTouchOverlayPointerReleased?.Invoke(sender, e);
 
         private void EpubTouchOverlay_PointerWheelChanged(object sender, PointerRoutedEventArgs e) =>
             EpubTouchOverlayPointerWheelChanged?.Invoke(sender, e);

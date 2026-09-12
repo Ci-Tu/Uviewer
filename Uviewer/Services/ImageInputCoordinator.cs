@@ -18,6 +18,7 @@ namespace Uviewer.Services
         private readonly Func<bool, Task> _navigateNextAsync;
         private readonly Action _applyZoom;
         private readonly HashSet<uint> _touchPointers = new();
+        private readonly PdfTextSelectionService _pdfTextSelection;
         private bool _isPinchManipulation;
         private bool _suppressTouchTap;
 
@@ -33,6 +34,44 @@ namespace Uviewer.Services
             _navigatePreviousAsync = navigatePreviousAsync;
             _navigateNextAsync = navigateNextAsync;
             _applyZoom = applyZoom;
+            _pdfTextSelection = new PdfTextSelectionService(host);
+        }
+
+        internal IReadOnlyList<PdfSearchHighlight> PdfSelectionHighlights => _pdfTextSelection.Highlights;
+
+        internal int PdfSelectionPageIndex => _pdfTextSelection.SelectionPageIndex;
+
+        public void PointerMoved(PointerRoutedEventArgs e)
+        {
+            if (!_pdfTextSelection.IsDragging) return;
+
+            var point = e.GetCurrentPoint(_host.ImageArea);
+            if (!point.Properties.IsLeftButtonPressed) return;
+
+            _pdfTextSelection.Update(point.Position);
+            e.Handled = true;
+        }
+
+        private static bool IsControlKeyDown() =>
+            InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control).HasFlag(CoreVirtualKeyStates.Down);
+
+        private bool TryBeginPdfTextSelection(PointerRoutedEventArgs e)
+        {
+            if (e.Pointer.PointerDeviceType != PointerDeviceType.Mouse) return false;
+            if (!IsControlKeyDown()) return false;
+            if (!_pdfTextSelection.CanSelect) return false;
+
+            var point = e.GetCurrentPoint(_host.ImageArea);
+            if (!point.Properties.IsLeftButtonPressed) return false;
+
+            try
+            {
+                _host.ImageArea.CapturePointer(e.Pointer);
+            }
+            catch { }
+
+            _pdfTextSelection.BeginSelection(point.Position);
+            return true;
         }
 
         public void ImageAreaSizeChanged(SizeChangedEventArgs e)
@@ -120,6 +159,12 @@ namespace Uviewer.Services
         {
             try
             {
+                if (_pdfTextSelection.IsDragging)
+                {
+                    e.Handled = true;
+                    return;
+                }
+
                 if (_host.CurrentBitmap == null || (_host.IsCurrentViewSideBySide && !_host.IsPdfMode)) return;
 
                 if (e.Delta.Scale != 1.0f)
@@ -189,6 +234,13 @@ namespace Uviewer.Services
                     return;
                 }
 
+                if (TryBeginPdfTextSelection(e))
+                {
+                    e.Handled = true;
+                    _host.FocusRoot();
+                    return;
+                }
+
                 if (_host.WindowShellController.HandleFullscreenPanelPointer(e))
                 {
                     e.Handled = true;
@@ -228,6 +280,11 @@ namespace Uviewer.Services
         public void PointerEnded(PointerRoutedEventArgs e)
         {
             _touchPointers.Remove(e.Pointer.PointerId);
+
+            if (_pdfTextSelection.IsDragging)
+            {
+                _pdfTextSelection.End();
+            }
         }
 
         public async Task TappedAsync(TappedRoutedEventArgs e)

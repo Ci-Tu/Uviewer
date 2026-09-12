@@ -727,6 +727,18 @@ namespace Uviewer
                 _activePdfSearchPageIndex,
                 _activePdfSearchHighlights,
                 _activePdfSearchMatchIndex);
+
+            PdfTextSelectionRenderer.Draw(
+                sender,
+                args,
+                _currentBitmap,
+                _currentPdfDocument != null,
+                _currentIndex,
+                _zoomLevel,
+                _imageViewportNavigationService.PanX,
+                _imageViewportNavigationService.PanY,
+                _imageViewerController.PdfSelectionPageIndex,
+                _imageViewerController.PdfSelectionHighlights);
         }
 
         private void LeftCanvas_CreateResources(CanvasControl sender, CanvasCreateResourcesEventArgs args)

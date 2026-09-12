@@ -3,6 +3,7 @@ using Microsoft.Graphics.Canvas.UI.Xaml;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Uviewer.Models;
@@ -399,6 +400,15 @@ namespace Uviewer.Services
 
         public Task PointerPressedAsync(PointerRoutedEventArgs e) =>
             _inputCoordinator.PointerPressedAsync(e);
+
+        public void PointerMoved(PointerRoutedEventArgs e) =>
+            _inputCoordinator.PointerMoved(e);
+
+        public IReadOnlyList<PdfSearchHighlight> PdfSelectionHighlights =>
+            _inputCoordinator.PdfSelectionHighlights;
+
+        public int PdfSelectionPageIndex =>
+            _inputCoordinator.PdfSelectionPageIndex;
 
         public void ClearImageResources()
         {

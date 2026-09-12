@@ -130,6 +130,7 @@
 - **Click/Touch Left Side**: Previous Page / Image
 - **Click/Touch Right Side**: Next Page / Image
 - **Ctrl + Mouse Wheel**: Zoom In/Out (panning with mouse right click and drag)
+- **Ctrl + Mouse Drag**: Text selection and clipboard copy
 - **Pinch Zoom**: Support for pinch-to-zoom gestures on touchpads and touchscreens.
 - **Control Direction Match**: When enabled in Side-by-Side mode (←), controls automatically invert to match the visual page progression.
   - Note: For images only. EPUBs always follow the standard text flow (horizontal/vertical).
