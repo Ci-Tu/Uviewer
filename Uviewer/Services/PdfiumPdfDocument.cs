@@ -1,111 +1,188 @@
-using PDFtoImage;
+using Microsoft.Win32.SafeHandles;
+using PDFtoImage.Exceptions;
 using SkiaSharp;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace Uviewer.Services
 {
-    /// <summary>
-    /// PDFium-backed PDF access used for encrypted PDFs that Windows.Data.Pdf cannot
-    /// load, including AES-256/R6 documents.
-    /// </summary>
+    /// <summary>A decrypted PDFium document retained for the reading session.</summary>
     internal sealed class PdfiumPdfDocument : IDisposable
     {
-        private readonly byte[] _pdfBytes;
-        private readonly string? _password;
-        private readonly IReadOnlyList<PdfiumPageSize> _pageSizes;
-        private bool _disposed;
+        private readonly DocumentHandle _document;
+        private readonly PdfiumPageSize[] _pageSizes;
 
-        private PdfiumPdfDocument(
-            byte[] pdfBytes,
-            string? password,
-            IReadOnlyList<PdfiumPageSize> pageSizes)
+        private PdfiumPdfDocument(DocumentHandle document, PdfiumPageSize[] pageSizes)
         {
-            _pdfBytes = pdfBytes;
-            _password = password;
+            _document = document;
             _pageSizes = pageSizes;
         }
 
-        public int PageCount => _pageSizes.Count;
+        public int PageCount => _pageSizes.Length;
 
         public static PdfiumPdfDocument Open(string path, string? password)
         {
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                throw new ArgumentException("PDF path is required.", nameof(path));
-            }
-
-            var bytes = File.ReadAllBytes(path);
+            if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException("PDF path is required.", nameof(path));
+            var buffer = GCHandle.Alloc(File.ReadAllBytes(path), GCHandleType.Pinned);
+            DocumentHandle? document = null;
             try
             {
-                var pageSizes = Conversion.GetPageSizes(bytes, password)
-                    .Select(size => new PdfiumPageSize(size.Width, size.Height))
-                    .ToArray();
+                lock (Native.Sync)
+                {
+                    var bytes = (byte[])buffer.Target!;
+                    var handle = Native.FPDF_LoadMemDocument64(buffer.AddrOfPinnedObject(), (nuint)bytes.Length, password);
+                    if (handle == IntPtr.Zero) throw Native.CreateException();
+                    document = new DocumentHandle(handle, buffer);
+                    buffer = default; // The native document now owns the pinned input.
 
-                return new PdfiumPdfDocument(bytes, password, pageSizes);
+                    int count = Native.FPDF_GetPageCount(handle);
+                    if (count <= 0) throw new PdfInvalidFormatException();
+                    var sizes = new PdfiumPageSize[count];
+                    for (int index = 0; index < count; index++)
+                    {
+                        if (Native.FPDF_GetPageSizeByIndex(handle, index, out double width, out double height) == 0 ||
+                            !double.IsFinite(width) || !double.IsFinite(height) ||
+                            width <= 0 || height <= 0) throw new PdfPageNotFoundException();
+                        sizes[index] = new PdfiumPageSize(width, height);
+                    }
+                    return new PdfiumPdfDocument(document, sizes);
+                }
             }
             catch
             {
-                Array.Clear(bytes, 0, bytes.Length);
+                document?.Dispose();
+                if (buffer.IsAllocated) buffer.Free();
                 throw;
             }
         }
 
         public PdfiumPageSize GetPageSize(uint pageIndex)
         {
-            ThrowIfDisposed();
-            if (pageIndex >= _pageSizes.Count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(pageIndex));
-            }
-
+            ObjectDisposedException.ThrowIf(_document.IsClosed, this);
+            if (pageIndex >= _pageSizes.Length) throw new ArgumentOutOfRangeException(nameof(pageIndex));
             return _pageSizes[(int)pageIndex];
         }
 
-        public SKBitmap Render(
-            uint pageIndex,
-            uint width,
-            uint height,
-            CancellationToken token)
+        public SKBitmap Render(uint pageIndex, uint width, uint height, CancellationToken token)
         {
-            ThrowIfDisposed();
+            GetPageSize(pageIndex);
             token.ThrowIfCancellationRequested();
+            int pixelWidth = checked((int)width);
+            int pixelHeight = checked((int)height);
+            if (pixelWidth <= 0 || pixelHeight <= 0) throw new ArgumentOutOfRangeException(nameof(width));
 
-            if (pageIndex >= _pageSizes.Count)
+            bool acquired = false;
+            try
             {
-                throw new ArgumentOutOfRangeException(nameof(pageIndex));
+                // Dispose/Shutdown can return while an in-flight native call finishes;
+                // the document and pinned bytes remain alive until the last render exits.
+                _document.DangerousAddRef(ref acquired);
+                lock (Native.Sync)
+                {
+                    token.ThrowIfCancellationRequested();
+                    var page = Native.FPDF_LoadPage(_document.DangerousGetHandle(), checked((int)pageIndex));
+                    if (page == IntPtr.Zero) throw new PdfPageNotFoundException();
+                    try
+                    {
+                        var bitmap = new SKBitmap(pixelWidth, pixelHeight, SKColorType.Bgra8888, SKAlphaType.Premul);
+                        try
+                        {
+                            if (bitmap.GetPixels() == IntPtr.Zero) throw new OutOfMemoryException("Cannot allocate PDF page pixels.");
+                            // Render into the final BGRA pixels. Tiles bound native work
+                            // and allow cancellation between strips at large zoom levels.
+                            for (int y = 0; y < pixelHeight; y += 1024)
+                            {
+                                token.ThrowIfCancellationRequested();
+                                int tileHeight = Math.Min(1024, pixelHeight - y);
+                                var pixels = IntPtr.Add(bitmap.GetPixels(), checked(y * bitmap.RowBytes));
+                                var target = Native.FPDFBitmap_CreateEx(pixelWidth, tileHeight, 4, pixels, bitmap.RowBytes);
+                                if (target == IntPtr.Zero) throw new PdfUnknownException();
+                                try
+                                {
+                                    Native.FPDFBitmap_FillRect(target, 0, 0, pixelWidth, tileHeight, 0xFFFFFFFF);
+                                    Native.FPDF_RenderPageBitmap(target, page, 0, -y, pixelWidth, pixelHeight, 0, 0x01);
+                                }
+                                finally { Native.FPDFBitmap_Destroy(target); }
+                            }
+                            token.ThrowIfCancellationRequested();
+                            return bitmap;
+                        }
+                        catch { bitmap.Dispose(); throw; }
+                    }
+                    finally { Native.FPDF_ClosePage(page); }
+                }
             }
-
-            var options = new RenderOptions(
-                Dpi: 72,
-                Width: checked((int)width),
-                Height: checked((int)height),
-                WithAnnotations: true,
-                UseTiling: true);
-
-            return Conversion.ToImage(
-                _pdfBytes,
-                checked((int)pageIndex),
-                _password,
-                options);
+            finally { if (acquired) _document.DangerousRelease(); }
         }
 
-        public void Dispose()
+        public void Dispose() => _document.Dispose();
+
+        private sealed class DocumentHandle : SafeHandleZeroOrMinusOneIsInvalid
         {
-            _disposed = true;
-            // Do not clear _pdfBytes here. A foreground render can hold a reference
-            // while shutdown is waiting for its native call to return.
+            private GCHandle _buffer;
+            public DocumentHandle(IntPtr document, GCHandle buffer) : base(true)
+            {
+                SetHandle(document);
+                _buffer = buffer;
+            }
+
+            protected override bool ReleaseHandle()
+            {
+                lock (Native.Sync)
+                {
+                    Native.FPDF_CloseDocument(handle);
+                    if (_buffer.IsAllocated) _buffer.Free();
+                }
+                return true;
+            }
         }
 
-        private void ThrowIfDisposed()
+        // PDFium is not thread-safe, including calls against different documents.
+        // Own its process-wide initialization here; do not mix Conversion.* calls
+        // (which independently manage PDFium) with this persistent document path.
+        private static class Native
         {
-            if (_disposed)
+            internal static readonly object Sync = new();
+            static Native() => FPDF_InitLibrary();
+
+            internal static Exception CreateException() => FPDF_GetLastError() switch
             {
-                throw new ObjectDisposedException(nameof(PdfiumPdfDocument));
-            }
+                2 => new PdfCannotOpenFileException(),
+                3 => new PdfInvalidFormatException(),
+                4 => new PdfPasswordProtectedException(),
+                5 => new PdfUnsupportedSecuritySchemeException(),
+                6 => new PdfPageNotFoundException(),
+                _ => new PdfUnknownException()
+            };
+
+            [DllImport("pdfium", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
+            private static extern void FPDF_InitLibrary();
+            [DllImport("pdfium", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
+            internal static extern IntPtr FPDF_LoadMemDocument64(IntPtr data, nuint length,
+                [MarshalAs(UnmanagedType.LPUTF8Str)] string? password);
+            [DllImport("pdfium", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
+            private static extern uint FPDF_GetLastError();
+            [DllImport("pdfium", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
+            internal static extern int FPDF_GetPageCount(IntPtr document);
+            [DllImport("pdfium", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
+            internal static extern int FPDF_GetPageSizeByIndex(IntPtr document, int index, out double width, out double height);
+            [DllImport("pdfium", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
+            internal static extern IntPtr FPDF_LoadPage(IntPtr document, int index);
+            [DllImport("pdfium", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
+            internal static extern void FPDF_ClosePage(IntPtr page);
+            [DllImport("pdfium", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
+            internal static extern void FPDF_CloseDocument(IntPtr document);
+            [DllImport("pdfium", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
+            internal static extern IntPtr FPDFBitmap_CreateEx(int width, int height, int format, IntPtr buffer, int stride);
+            [DllImport("pdfium", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
+            internal static extern void FPDFBitmap_Destroy(IntPtr bitmap);
+            [DllImport("pdfium", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
+            internal static extern void FPDFBitmap_FillRect(IntPtr bitmap, int left, int top, int width, int height, uint color);
+            [DllImport("pdfium", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
+            internal static extern void FPDF_RenderPageBitmap(IntPtr bitmap, IntPtr page,
+                int left, int top, int width, int height, int rotation, int flags);
         }
     }
 

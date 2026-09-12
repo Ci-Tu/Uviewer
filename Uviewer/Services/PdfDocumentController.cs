@@ -135,71 +135,11 @@ namespace Uviewer.Services
         /// </summary>
         private async Task<bool> LoadPdfSessionWithPasswordAsync(PdfDocumentSession pdfSession, string pdfPath)
         {
-            // Windows.Data.Pdf는 비밀번호 누락을 문서/버전에 따라 다른 오류 코드로 보고할 수 있어,
-            // PdfPig로 암호화 여부를 먼저 확인한 뒤 프롬프트를 띄운다.
-            // Do the cheap trailer check first. Some encrypted PDFs (notably AES-256/R6)
-            // are reported by different PDF readers as a generic open failure, so waiting
-            // for Windows.Data.Pdf to fail is not a reliable way to decide whether to
-            // show the password dialog.
-            bool passwordRequired = await Task.Run(() =>
-                PdfPigDocumentFactory.HasEncryptionMarker(pdfPath) ||
-                PdfPigDocumentFactory.IsEncrypted(pdfPath));
-            string? password = null;
-            bool isRetry = false;
-
-            while (true)
-            {
-                if (passwordRequired)
-                {
-                    var requested = await _handlers.RequestPdfPasswordAsync(pdfPath, isRetry);
-                    if (string.IsNullOrEmpty(requested))
-                    {
-                        _handlers.SetStatusText(Strings.PdfPasswordCancelled);
-                        return false;
-                    }
-
-                    password = requested;
-                    isRetry = true;
-                }
-
-                try
-                {
-                    // Windows.Data.Pdf cannot open AES-256/R6 PDFs. Use PDFium for
-                    // encrypted documents; keep Windows.Data.Pdf for normal PDFs.
-                    await pdfSession.LoadFileAsync(password, usePdfium: passwordRequired);
-                    return true;
-                }
-                catch (Exception ex) when (IsPdfPasswordFailure(ex, pdfPath, password))
-                {
-                    passwordRequired = true;
-                }
-            }
-        }
-
-        /// <summary>비밀번호 문제로 열기에 실패했는지 판별한다.</summary>
-        private static bool IsPdfPasswordFailure(Exception ex, string pdfPath, string? attemptedPassword)
-        {
-            if (ex is OperationCanceledException)
-            {
-                return false;
-            }
-
-            // 시도한 비밀번호가 유효한데도 실패했다면 비밀번호 문제가 아니므로 실패를 그대로 알린다.
-            if (!string.IsNullOrEmpty(attemptedPassword) &&
-                PdfPigDocumentFactory.CanOpen(pdfPath, attemptedPassword))
-            {
-                return false;
-            }
-
-            // Windows는 비밀번호 누락/불일치 시 ERROR_WRONG_PASSWORD(0x8007052B)를 반환한다.
-            if (ex.HResult == PdfDocumentSession.WrongPasswordHResult)
-            {
-                return true;
-            }
-
-            // 오류 코드가 달라도 파일에 암호화 흔적이 있으면 비밀번호 문제로 취급한다.
-            return PdfPigDocumentFactory.IsEncrypted(pdfPath) ||
-                PdfPigDocumentFactory.HasEncryptionMarker(pdfPath);
+            bool opened = await PdfDocumentOpenService.OpenAsync(
+                (password, usePdfium) => pdfSession.LoadFileAsync(password, usePdfium),
+                isRetry => _handlers.RequestPdfPasswordAsync(pdfPath, isRetry));
+            if (!opened) _handlers.SetStatusText(Strings.PdfPasswordCancelled);
+            return opened;
         }
 
         public async Task<bool> CloseCurrentPdfAsync()

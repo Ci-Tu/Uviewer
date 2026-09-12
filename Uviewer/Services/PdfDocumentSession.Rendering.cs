@@ -1,10 +1,10 @@
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.UI.Xaml;
-using SkiaSharp;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.Data.Pdf;
+using Windows.Graphics.DirectX;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
 
@@ -325,11 +325,14 @@ namespace Uviewer.Services
                 zoomLevel,
                 isPreload);
 
-            // PDFium performs the native render on a worker thread. Its wrapper
-            // serializes calls internally because PDFium is not thread-safe.
-            using var skBitmap = await Task.Run(
-                () => pdfiumDoc.Render(pageIndex, destinationWidth, destinationHeight, token),
-                token);
+            // Keep rasterization and the one required pixel copy off the UI thread.
+            // Transfer BGRA directly to Win2D instead of encoding and decoding PNG.
+            var pixels = await Task.Run(() =>
+            {
+                using var rendered = pdfiumDoc.Render(pageIndex, destinationWidth, destinationHeight, token);
+                token.ThrowIfCancellationRequested();
+                return rendered.Bytes;
+            }, token);
 
             if (isWindowClosing() || token.IsCancellationRequested ||
                 !IsCurrentScopeForRender(pdfiumDoc, pdfGenerationAtStart, pdfPathAtStart))
@@ -337,30 +340,10 @@ namespace Uviewer.Services
                 return null;
             }
 
-            using var encoded = skBitmap.Encode(SKEncodedImageFormat.Png, 100);
-            if (encoded == null)
-            {
-                return null;
-            }
-
-            using var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
-            using (var writer = new Windows.Storage.Streams.DataWriter(stream))
-            {
-                writer.WriteBytes(encoded.ToArray());
-                await writer.StoreAsync().AsTask(token);
-                await writer.FlushAsync().AsTask(token);
-                writer.DetachStream();
-            }
-
-            stream.Seek(0);
             var device = canvas.Device ?? CanvasDevice.GetSharedDevice();
-            var loadOperation = CanvasBitmap.LoadAsync(device, stream, 96.0f);
-            using var loadCancel = token.Register(() =>
-            {
-                try { loadOperation.Cancel(); }
-                catch { }
-            });
-            var bitmap = await loadOperation.AsTask(token);
+            var bitmap = CanvasBitmap.CreateFromBytes(device, pixels,
+                checked((int)destinationWidth), checked((int)destinationHeight),
+                DirectXPixelFormat.B8G8R8A8UIntNormalized, 96.0f, CanvasAlphaMode.Premultiplied);
 
             if (isWindowClosing() || token.IsCancellationRequested ||
                 !IsCurrentScopeForRender(pdfiumDoc, pdfGenerationAtStart, pdfPathAtStart))
