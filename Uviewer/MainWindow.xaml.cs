@@ -680,6 +680,8 @@ namespace Uviewer
         private void MainCanvas_Draw(CanvasControl sender, CanvasDrawEventArgs args)
         {
             double panY = _imageViewportNavigationService.PanY;
+            int displayedIndex = _currentPdfDocument != null
+                ? _imageViewportNavigationService.DisplayedPdfPageIndex : _currentIndex;
             if (_hdrSwapChainRenderer.DrawMain(
                 HdrMainCanvas,
                 sender,
@@ -705,7 +707,7 @@ namespace Uviewer
                 _currentBitmap,
                 _imageEntries,
                 _imageCache,
-                _currentIndex,
+                displayedIndex,
                 _zoomLevel,
                 _currentPdfDocument != null,
                 _isCurrentViewSideBySide,
@@ -720,7 +722,7 @@ namespace Uviewer
                 args,
                 _currentBitmap,
                 _currentPdfDocument != null,
-                _currentIndex,
+                displayedIndex,
                 _zoomLevel,
                 _imageViewportNavigationService.PanX,
                 _imageViewportNavigationService.PanY,
@@ -728,14 +730,16 @@ namespace Uviewer
                 _activePdfSearchHighlights,
                 _activePdfSearchMatchIndex);
 
-            _imageViewerController.SyncPdfTextSelection(_currentPdfPath, _currentIndex);
+            _imageViewerController.SyncPdfTextSelection(_currentPdfPath, displayedIndex);
 
             PdfTextSelectionRenderer.Draw(
                 sender,
                 args,
                 _currentBitmap,
+                _imageCache,
+                _imageEntries.Count,
                 _currentPdfDocument != null,
-                _currentIndex,
+                displayedIndex,
                 _zoomLevel,
                 _imageViewportNavigationService.PanX,
                 _imageViewportNavigationService.PanY,

@@ -71,6 +71,16 @@ namespace Uviewer.Renderers
                 canvasSize.Width <= 0 || canvasSize.Height <= 0)
                 return;
 
+            if (isPdfMode)
+            {
+                foreach (var page in PdfPageLayout.GetDisplayPages(currentBitmap, imageCache,
+                    currentIndex, imageEntries.Count, canvasSize, zoomLevel, panX, panY))
+                {
+                    DrawBitmap(ds, page.Bitmap, page.Bounds, true, preferAnimationSpeed);
+                }
+                return;
+            }
+
             var fitRatio = Math.Min(canvasSize.Width / imageSize.Width, canvasSize.Height / imageSize.Height);
             var scaledSize = new Size(imageSize.Width * fitRatio * zoomLevel, imageSize.Height * fitRatio * zoomLevel);
             var position = new Point(

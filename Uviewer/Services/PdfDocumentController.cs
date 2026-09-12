@@ -338,6 +338,7 @@ namespace Uviewer.Services
                 if (_handlers.IsWindowClosing()) return;
                 var pdfSession = CurrentPdfSession;
                 if (pdfSession?.HasDocument != true || _imageViewerState.CurrentBitmap == null) return;
+                if (_imageViewportNavigationService.DisplayedPdfPageIndex != _imageViewerState.CurrentIndex) return;
                 if (_imageViewerState.CurrentIndex < 0 || _imageViewerState.CurrentIndex >= _imageViewerState.Entries.Count) return;
 
                 var entry = _imageViewerState.Entries[_imageViewerState.CurrentIndex];

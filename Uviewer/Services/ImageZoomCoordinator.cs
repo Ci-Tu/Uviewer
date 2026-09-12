@@ -1,3 +1,5 @@
+using Windows.Foundation;
+
 namespace Uviewer.Services
 {
     internal sealed class ImageZoomCoordinator
@@ -20,6 +22,7 @@ namespace Uviewer.Services
 
                 if (containerWidth > 0 && containerHeight > 0)
                 {
+                    double previousZoom = _host.ZoomLevel;
                     _host.ZoomService.CalculateActualZoom(
                         containerWidth,
                         containerHeight,
@@ -27,6 +30,7 @@ namespace Uviewer.Services
                         bitmapSize.Height,
                         _host.MainCanvas.Dpi / 96.0f,
                         _host.IsPdfMode);
+                    PreservePdfPosition(previousZoom);
                     ApplyZoom();
                 }
             }
@@ -35,21 +39,41 @@ namespace Uviewer.Services
         public void ZoomIn()
         {
             if (_host.IsCurrentViewSideBySide && !_host.IsPdfMode) return;
+            double previousZoom = _host.ZoomLevel;
             _host.ZoomService.ZoomIn();
+            PreservePdfPosition(previousZoom);
             ApplyZoom();
         }
 
         public void ZoomOut()
         {
             if (_host.IsCurrentViewSideBySide && !_host.IsPdfMode) return;
+            double previousZoom = _host.ZoomLevel;
             _host.ZoomService.ZoomOut();
+            PreservePdfPosition(previousZoom);
             ApplyZoom();
         }
 
         public void FitToWindow()
         {
+            double previousZoom = _host.ZoomLevel;
             _host.ZoomService.FitToWindow();
+            PreservePdfPosition(previousZoom);
             ApplyZoom();
+        }
+
+        private void PreservePdfPosition(double previousZoom)
+        {
+            if (!_host.IsPdfMode || !CanvasBitmapHelper.TryGetBitmapSize(_host.CurrentBitmap, out var size)) return;
+            var navigation = _host.ImageViewportNavigationService;
+            navigation.StopSmoothZoom();
+            var canvasSize = _host.MainCanvas.Size;
+            var transform = ZoomService.CalculateZoomAtPosition(canvasSize, size, previousZoom,
+                navigation.PanX, navigation.PanY, _host.ZoomLevel / previousZoom,
+                new Point(canvasSize.Width / 2, canvasSize.Height / 2), continuousVertical: true);
+            if (!transform.HasValue) return;
+            navigation.PanX = transform.Value.PanX;
+            navigation.PanY = transform.Value.PanY;
         }
 
         public void ApplyZoom()

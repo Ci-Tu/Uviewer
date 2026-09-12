@@ -193,7 +193,9 @@ namespace Uviewer.Services
                 previousRequest = request;
 
                 var batch = new List<Task>(2);
-                for (int distance = 1; distance <= 3 && batch.Count < 2; distance++)
+                // Zooming out exposes more than three pages on either side.
+                int previewRange = Math.Clamp((int)Math.Ceiling(2 / request.Zoom) + 1, 3, 20);
+                for (int distance = 1; distance <= previewRange && batch.Count < 2; distance++)
                 {
                     int direction = request.PrioritizeNext ? 1 : -1;
                     foreach (int index in new[] {

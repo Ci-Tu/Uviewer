@@ -1,5 +1,6 @@
 using Microsoft.Graphics.Canvas;
 using System;
+using System.Collections.Generic;
 using Windows.Foundation;
 
 namespace Uviewer.Services
@@ -10,6 +11,36 @@ namespace Uviewer.Services
     /// </summary>
     internal static class PdfPageLayout
     {
+        internal readonly record struct DisplayPage(int Index, CanvasBitmap Bitmap, Rect Bounds);
+
+        // Rendering and hit testing must use the same page rectangles, including previews
+        // rendered at a different resolution while a zoom render is pending.
+        internal static IEnumerable<DisplayPage> GetDisplayPages(
+            CanvasBitmap? currentBitmap, ImageCacheManager cache, int currentIndex, int pageCount,
+            Size canvasSize, double zoomLevel, double panX, double panY)
+        {
+            if (currentIndex < 0 || currentIndex >= pageCount ||
+                !TryGetPageRect(currentBitmap, canvasSize, zoomLevel, panX, panY, out var current)) yield break;
+
+            yield return new DisplayPage(currentIndex, currentBitmap!, current);
+            double gap = 20 * zoomLevel;
+            foreach (int direction in new[] { -1, 1 })
+            {
+                double edge = direction < 0 ? current.Top : current.Bottom;
+                for (int index = currentIndex + direction; index >= 0 && index < pageCount; index += direction)
+                {
+                    if (direction < 0 ? edge < -500 : edge > canvasSize.Height + 500) break;
+                    var bitmap = cache.GetPreloadedImage(index);
+                    if (bitmap == currentBitmap ||
+                        !TryGetPageRect(bitmap, canvasSize, zoomLevel, panX, 0, out var bounds)) break;
+
+                    bounds.Y = direction < 0 ? edge - gap - bounds.Height : edge + gap;
+                    yield return new DisplayPage(index, bitmap!, bounds);
+                    edge = direction < 0 ? bounds.Top : bounds.Bottom;
+                }
+            }
+        }
+
         public static bool TryGetPageRect(
             CanvasBitmap? bitmap,
             Size canvasSize,

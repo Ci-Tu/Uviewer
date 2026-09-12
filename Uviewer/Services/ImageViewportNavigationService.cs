@@ -59,6 +59,7 @@ namespace Uviewer.Services
         public double PanX { get; set; }
         public double PanY { get; set; }
         public bool IsTransitioning { get; set; }
+        public int DisplayedPdfPageIndex { get; set; } = -1;
         public int ScrollDirection { get; set; } = 1;
         public bool IsSmoothZoomRunning => _smoothZoomTimer?.IsRunning == true;
 
@@ -66,6 +67,7 @@ namespace Uviewer.Services
         {
             PanX = 0;
             PanY = 0;
+            DisplayedPdfPageIndex = -1;
             IsTransitioning = false;
             ScrollDirection = scrollDirection;
             _targetZoomLevel = 1.0;
@@ -103,7 +105,8 @@ namespace Uviewer.Services
                 PanX,
                 PanY,
                 zoomMultiplier,
-                position);
+                position,
+                continuousVertical: context.IsPdfMode());
 
             if (!transform.HasValue) return;
 
@@ -155,6 +158,7 @@ namespace Uviewer.Services
             double zoomLevel = context.GetZoomLevel();
 
             if ((!isPdfMode && zoomLevel <= 1.01) ||
+                (isPdfMode && DisplayedPdfPageIndex != context.GetCurrentIndex()) ||
                 !CanvasBitmapHelper.TryGetBitmapSize(bitmap, out var imageSize) ||
                 IsTransitioning)
             {
@@ -172,7 +176,7 @@ namespace Uviewer.Services
                 if (!allowPageTransition)
                 {
                     double maxPanY = GetMaxPanY(scaledSize.Height, canvasSize.Height);
-                    PanY = Math.Clamp(PanY + deltaY, -maxPanY, maxPanY);
+                    PanY = isPdfMode ? PanY + deltaY : Math.Clamp(PanY + deltaY, -maxPanY, maxPanY);
                     context.ApplyZoom();
                     return;
                 }
@@ -261,7 +265,6 @@ namespace Uviewer.Services
                     isPdf: true,
                     currentZoom: zoomLevel,
                     currentDisplayingBitmap: context.GetCurrentBitmap());
-                context.SetCurrentIndex(targetIndex);
 
                 var targetBitmap = GetCachedTargetBitmap(context, targetIndex, zoomLevel);
                 if (targetBitmap == null || !CanvasBitmapHelper.TryGetBitmapSize(targetBitmap, out var targetSize))
@@ -280,8 +283,16 @@ namespace Uviewer.Services
                     if (!CanvasBitmapHelper.TryGetBitmapSize(targetBitmap, out targetSize)) return true;
                 }
 
+                // Keep the page index paired with the bitmap until the asynchronous load
+                // completes. Otherwise pointer hit tests can read another page's text.
+                if (token.IsCancellationRequested || generation != context.ImageCache.Generation ||
+                    context.GetCurrentIndex() != oldIndex || context.GetZoomLevel() != zoomLevel ||
+                    context.GetCurrentBitmap() != currentBitmap) return true;
+
                 PanY = CalculateTransitionPanY(canvasSize, targetSize, zoomLevel, anchorEdge, forward);
+                context.SetCurrentIndex(targetIndex);
                 context.SetCurrentBitmap(targetBitmap);
+                if (context.IsPdfMode()) DisplayedPdfPageIndex = targetIndex;
 
                 var entry = context.ImageEntries[targetIndex];
                 context.UpdateStatusBar(entry, targetBitmap);
@@ -316,7 +327,8 @@ namespace Uviewer.Services
                 ? context.ImageCache.GetSharpenedImage(targetIndex)
                 : null;
 
-            return bitmap ?? context.ImageCache.GetPreloadedImage(targetIndex, zoomLevel);
+            return bitmap ?? context.ImageCache.GetPreloadedImage(targetIndex,
+                context.IsPdfMode() ? null : zoomLevel);
         }
 
         private async Task<CanvasBitmap?> LoadTargetBitmapAsync(

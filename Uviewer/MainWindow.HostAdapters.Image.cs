@@ -116,7 +116,8 @@ namespace Uviewer
             public bool ShouldInvertControls => Window.ShouldInvertControls;
             public string? CurrentPdfPath => Window._currentPdfPath;
             public string? CurrentPdfPassword => Window._pdfDocumentController.CurrentPassword;
-            public int CurrentPdfPageIndex => ImageState.CurrentIndex;
+            public int CurrentPdfPageIndex => Window._imageViewportNavigationService.DisplayedPdfPageIndex;
+            public ImageCacheManager ImageCache => Window._imageCache;
             public double LastCanvasWidth { get => ImageState.LastCanvasWidth; set => ImageState.LastCanvasWidth = value; }
 
             public CanvasControl MainCanvas => Window.MainCanvas;

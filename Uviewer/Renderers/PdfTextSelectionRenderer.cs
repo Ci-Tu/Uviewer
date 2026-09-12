@@ -17,6 +17,8 @@ namespace Uviewer.Renderers
             CanvasControl sender,
             CanvasDrawEventArgs args,
             CanvasBitmap? currentBitmap,
+            ImageCacheManager imageCache,
+            int pageCount,
             bool hasPdfDocument,
             int currentPageIndex,
             double zoomLevel,
@@ -26,9 +28,15 @@ namespace Uviewer.Renderers
             IReadOnlyList<PdfSearchHighlight> highlights)
         {
             if (!hasPdfDocument || currentBitmap == null) return;
-            if (selectionPageIndex != currentPageIndex || highlights.Count == 0) return;
+            if (highlights.Count == 0) return;
 
-            if (!PdfPageLayout.TryGetPageRect(currentBitmap, sender.Size, zoomLevel, panX, panY, out var pageRect)) return;
+            Rect pageRect = default;
+            foreach (var page in PdfPageLayout.GetDisplayPages(currentBitmap, imageCache, currentPageIndex,
+                pageCount, sender.Size, zoomLevel, panX, panY))
+            {
+                if (page.Index == selectionPageIndex) { pageRect = page.Bounds; break; }
+            }
+            if (pageRect.Width <= 0 || pageRect.Height <= 0) return;
 
             foreach (var highlight in highlights)
             {

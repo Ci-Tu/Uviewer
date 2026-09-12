@@ -48,7 +48,7 @@ namespace Uviewer.Services
         {
             if (!_pdfTextSelection.IsDragging) return;
 
-            var point = e.GetCurrentPoint(_host.ImageArea);
+            var point = e.GetCurrentPoint(_host.MainCanvas);
             if (!point.Properties.IsLeftButtonPressed) return;
 
             _pdfTextSelection.Update(point.Position);
@@ -64,7 +64,7 @@ namespace Uviewer.Services
             if (!IsControlKeyDown()) return false;
             if (!_pdfTextSelection.CanSelect) return false;
 
-            var point = e.GetCurrentPoint(_host.ImageArea);
+            var point = e.GetCurrentPoint(_host.MainCanvas);
             if (!point.Properties.IsLeftButtonPressed) return false;
 
             try
@@ -103,7 +103,7 @@ namespace Uviewer.Services
                     if (_host.CurrentBitmap != null && (!_host.IsCurrentViewSideBySide || _host.IsPdfMode))
                     {
                         double zoomMultiplier = Math.Exp(wheelDelta * 0.001);
-                        var point = e.GetCurrentPoint(_host.ImageArea).Position;
+                        var point = e.GetCurrentPoint(_host.MainCanvas).Position;
                         _host.ImageViewportNavigationService.StartSmoothZoom(
                             _createNavigationContext(),
                             zoomMultiplier,
@@ -154,7 +154,7 @@ namespace Uviewer.Services
         public void ManipulationStarting(ManipulationStartingRoutedEventArgs e)
         {
             _isPinchManipulation = _touchPointers.Count > 1;
-            e.Container = _host.ImageArea;
+            e.Container = _host.MainCanvas;
             e.Mode = ManipulationModes.All;
         }
 
@@ -286,6 +286,7 @@ namespace Uviewer.Services
 
             if (_pdfTextSelection.IsDragging)
             {
+                _pdfTextSelection.Update(e.GetCurrentPoint(_host.MainCanvas).Position);
                 _pdfTextSelection.End();
             }
         }

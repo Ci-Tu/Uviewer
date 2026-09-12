@@ -38,6 +38,9 @@ namespace Uviewer.Services
         private string? _selectionPath;
 
         private Point _startPoint;
+        private Point _focusPoint;
+        private int _selectionGeneration;
+        private bool _endRequested;
 
         public PdfTextSelectionService(IImageInputHost host)
         {
@@ -54,6 +57,7 @@ namespace Uviewer.Services
 
         public bool CanSelect =>
             _host.IsPdfMode &&
+            !_host.ImageViewportNavigationService.IsTransitioning &&
             !string.IsNullOrEmpty(_host.CurrentPdfPath) &&
             _host.CurrentBitmap != null;
 
@@ -62,41 +66,38 @@ namespace Uviewer.Services
         {
             if (!CanSelect) return;
 
+            ResetSelection();
+            _host.MainCanvas.Invalidate();
+            var hitPage = GetDisplayPages().FirstOrDefault(page => page.Bounds.Contains(canvasPoint));
+            if (hitPage.Bitmap == null) return;
+
             IsDragging = true;
-            HasSelection = false;
-            AnchorIndex = -1;
-            FocusIndex = -1;
-            _highlights.Clear();
             _selectionPath = _host.CurrentPdfPath;
-            SelectionPageIndex = _host.CurrentPdfPageIndex;
-            _startPoint = canvasPoint;
-            _ = BeginSelectionCoreAsync();
+            SelectionPageIndex = hitPage.Index;
+            _startPoint = NormalizePoint(canvasPoint, hitPage.Bounds);
+            _focusPoint = _startPoint;
+            _ = BeginSelectionCoreAsync(_selectionGeneration, _selectionPath!, SelectionPageIndex);
         }
 
-        private async Task BeginSelectionCoreAsync()
+        private async Task BeginSelectionCoreAsync(int generation, string path, int pageIndex)
         {
             try
             {
-                string? path = _host.CurrentPdfPath;
-                if (string.IsNullOrEmpty(path)) return;
-
-                int pageIndex = _host.CurrentPdfPageIndex;
                 var map = await EnsureMapAsync(path, pageIndex);
-                if (map == null || !IsDragging) return;
+                if (map == null || generation != _selectionGeneration || (!IsDragging && !_endRequested)) return;
                 if (!string.Equals(path, _host.CurrentPdfPath, StringComparison.OrdinalIgnoreCase)) return;
-                if (pageIndex != _host.CurrentPdfPageIndex) return;
-                if (!TryMapPointToPdf(_startPoint, map, out double x, out double y)) return;
 
-                int index = FindCharacterIndex(map, x, y);
+                int index = FindCharacterIndex(map, _startPoint.X * map.PageWidth, (1 - _startPoint.Y) * map.PageHeight);
                 if (index < 0) return;
 
                 AnchorIndex = index;
-                FocusIndex = index;
+                FocusIndex = FindCharacterIndex(map, _focusPoint.X * map.PageWidth, (1 - _focusPoint.Y) * map.PageHeight);
                 HasSelection = true;
                 SelectionPageIndex = pageIndex;
                 _selectionPath = path;
                 UpdateHighlights(map);
                 _host.MainCanvas?.Invalidate();
+                if (_endRequested) CopySelection();
             }
             catch (Exception ex)
             {
@@ -109,12 +110,12 @@ namespace Uviewer.Services
         {
             if (!IsDragging) return;
 
+            if (!TryGetSelectionRect(out var pageRect)) return;
+            _focusPoint = NormalizePoint(canvasPoint, pageRect);
             var map = _map;
             if (map == null || !HasSelection) return;
-            if (SelectionPageIndex != _host.CurrentPdfPageIndex) return;
-            if (!TryMapPointToPdf(canvasPoint, map, out double x, out double y)) return;
 
-            int index = FindCharacterIndex(map, x, y);
+            int index = FindCharacterIndex(map, _focusPoint.X * map.PageWidth, (1 - _focusPoint.Y) * map.PageHeight);
             if (index < 0 || index == FocusIndex) return;
 
             FocusIndex = index;
@@ -127,7 +128,14 @@ namespace Uviewer.Services
         {
             if (!IsDragging) return;
             IsDragging = false;
+            _endRequested = true;
+            CopySelection();
+        }
+
+        private void CopySelection()
+        {
             if (!HasSelection) return;
+            _endRequested = false;
 
             string text = ExtractSelectedText();
             if (string.IsNullOrWhiteSpace(text)) return;
@@ -146,15 +154,15 @@ namespace Uviewer.Services
 
         /// <summary>
         /// 현재 표시 중인 PDF 문서/페이지와 선택 상태를 동기화합니다.
-        /// 다른 파일을 열거나 페이지가 바뀌어 선택이 더 이상 유효하지 않으면 오버레이를 지웁니다.
+        /// 다른 파일을 열거나 선택한 페이지가 표시 범위에서 벗어나면 오버레이를 지웁니다.
         /// (그리기 도중 호출되므로 다시 그리기를 요청하지 않습니다.)
         /// </summary>
         public void SyncDocument(string? pdfPath, int pageIndex)
         {
             if (!IsDragging && !HasSelection && _selectionPath == null) return;
 
-            if (string.Equals(_selectionPath, pdfPath, StringComparison.OrdinalIgnoreCase) &&
-                SelectionPageIndex == pageIndex)
+            if (pageIndex >= 0 && string.Equals(_selectionPath, pdfPath, StringComparison.OrdinalIgnoreCase) &&
+                TryGetSelectionRect(out _))
             {
                 return;
             }
@@ -164,6 +172,9 @@ namespace Uviewer.Services
 
         private void ResetSelection()
         {
+            _selectionGeneration++;
+            _mapGeneration++;
+            _endRequested = false;
             IsDragging = false;
             HasSelection = false;
             AnchorIndex = -1;
@@ -177,6 +188,7 @@ namespace Uviewer.Services
         {
             if (_map != null &&
                 _mapPageIndex == pageIndex &&
+                string.Equals(_mapPassword, _host.CurrentPdfPassword, StringComparison.Ordinal) &&
                 string.Equals(_mapPath, path, StringComparison.OrdinalIgnoreCase))
             {
                 return _map;
@@ -220,31 +232,29 @@ namespace Uviewer.Services
             return map;
         }
 
-        private bool TryMapPointToPdf(Point canvasPoint, PdfTextSelectionMap map, out double pdfX, out double pdfY)
+        private IEnumerable<PdfPageLayout.DisplayPage> GetDisplayPages()
         {
-            pdfX = 0;
-            pdfY = 0;
-
-            var canvas = _host.MainCanvas;
-            if (canvas == null) return false;
-
-            if (!PdfPageLayout.TryGetPageRect(
-                    _host.CurrentBitmap,
-                    canvas.Size,
-                    _host.ZoomLevel,
-                    _host.ImageViewportNavigationService.PanX,
-                    _host.ImageViewportNavigationService.PanY,
-                    out var pageRect))
-            {
-                return false;
-            }
-
-            double normalizedX = (canvasPoint.X - pageRect.X) / pageRect.Width;
-            double normalizedY = (canvasPoint.Y - pageRect.Y) / pageRect.Height;
-            pdfX = normalizedX * map.PageWidth;
-            pdfY = map.PageHeight - (normalizedY * map.PageHeight);
-            return true;
+            return PdfPageLayout.GetDisplayPages(_host.CurrentBitmap, _host.ImageCache,
+                _host.CurrentPdfPageIndex, _host.ImageEntries.Count, _host.MainCanvas.Size,
+                _host.ZoomLevel, _host.ImageViewportNavigationService.PanX,
+                _host.ImageViewportNavigationService.PanY);
         }
+
+        private bool TryGetSelectionRect(out Rect pageRect)
+        {
+            foreach (var page in GetDisplayPages())
+            {
+                if (page.Index != SelectionPageIndex) continue;
+                pageRect = page.Bounds;
+                return true;
+            }
+            pageRect = default;
+            return false;
+        }
+
+        private static Point NormalizePoint(Point point, Rect bounds) => new(
+            Math.Clamp((point.X - bounds.X) / bounds.Width, 0, 1),
+            Math.Clamp((point.Y - bounds.Y) / bounds.Height, 0, 1));
 
         private static int FindCharacterIndex(PdfTextSelectionMap map, double x, double y)
         {
@@ -373,6 +383,7 @@ namespace Uviewer.Services
             var sb = new StringBuilder(selected.Count + 8);
             Letter? previous = null;
             int previousLine = -1;
+            int previousIndex = -1;
 
             foreach (int index in selected)
             {
@@ -383,7 +394,9 @@ namespace Uviewer.Services
 
                 int line = layout.LineIndex[index];
                 if (sb.Length > 0 &&
-                    (line != previousLine || (previous != null && SearchHighlightService.ShouldInsertPdfSpace(previous, letter))))
+                    (line != previousLine ||
+                     HasWhitespaceBetween(map.Text, previousIndex, index) ||
+                     (previous != null && !ReferenceEquals(previous, letter) && SearchHighlightService.ShouldInsertPdfSpace(previous, letter))))
                 {
                     AppendSpace(sb);
                 }
@@ -394,9 +407,22 @@ namespace Uviewer.Services
 
                 previous = letter;
                 previousLine = line;
+                previousIndex = index;
             }
 
             return sb.ToString().Trim();
+        }
+
+        private static bool HasWhitespaceBetween(string text, int previous, int current)
+        {
+            if (previous < 0 || current <= previous + 1) return false;
+            // Whitespace has no glyph in the normalized map, so it is absent from
+            // ReadingOrder. Preserve it only between consecutive selected glyphs.
+            for (int i = previous + 1; i < current; i++)
+            {
+                if (!char.IsWhiteSpace(text[i])) return false;
+            }
+            return true;
         }
 
         private void UpdateHighlights(PdfTextSelectionMap map)

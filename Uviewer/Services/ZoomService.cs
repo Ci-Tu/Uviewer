@@ -59,7 +59,8 @@ namespace Uviewer.Services
             double currentPanX,
             double currentPanY,
             double zoomMultiplier,
-            Point position)
+            Point position,
+            bool continuousVertical = false)
         {
             if (canvasSize.Width <= 0 || canvasSize.Height <= 0) return null;
             if (imageSize.Width <= 0 || imageSize.Height <= 0) return null;
@@ -91,7 +92,7 @@ namespace Uviewer.Services
             return new ImageViewportTransform(
                 newZoom,
                 Math.Clamp(panX, -maxPanX, maxPanX),
-                Math.Clamp(panY, -maxPanY, maxPanY));
+                continuousVertical ? panY : Math.Clamp(panY, -maxPanY, maxPanY));
         }
 
         internal static double CalculateInitialVerticalPan(

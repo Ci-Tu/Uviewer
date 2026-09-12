@@ -61,6 +61,7 @@ namespace Uviewer.Services
         string? CurrentPdfPath { get; }
         string? CurrentPdfPassword { get; }
         int CurrentPdfPageIndex { get; }
+        ImageCacheManager ImageCache { get; }
         double LastCanvasWidth { get; set; }
 
         CanvasControl MainCanvas { get; }

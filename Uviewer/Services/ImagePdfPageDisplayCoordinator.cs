@@ -79,6 +79,7 @@ namespace Uviewer.Services
         {
             var oldBitmap = _host.CurrentBitmap;
             _host.CurrentBitmap = nextBitmap;
+            _host.ImageViewportNavigationService.DisplayedPdfPageIndex = _host.CurrentIndex;
             _host.LeftBitmap = null;
             _host.RightBitmap = null;
 
