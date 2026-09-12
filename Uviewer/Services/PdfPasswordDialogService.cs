@@ -55,27 +55,34 @@ namespace Uviewer.Services
             var panel = new StackPanel
             {
                 Width = 320,
+                Height = 124,
                 Spacing = 8
             };
 
             panel.Children.Add(new TextBlock
             {
                 Text = Strings.PdfPasswordPromptForFile(Path.GetFileName(pdfPath)),
+                Height = 56,
                 TextWrapping = TextWrapping.Wrap
             });
 
-            if (isRetry)
+            // Keep this row in the layout even on the first attempt. Otherwise the
+            // dialog is measured at a different height after a failed attempt.
+            panel.Children.Add(new TextBlock
             {
-                panel.Children.Add(new TextBlock
-                {
-                    Text = Strings.PdfPasswordWrong,
-                    TextWrapping = TextWrapping.Wrap
-                });
-            }
+                Text = isRetry ? Strings.PdfPasswordWrong : string.Empty,
+                Height = 20,
+                TextWrapping = TextWrapping.Wrap
+            });
 
             var passwordBox = new PasswordBox
             {
-                PlaceholderText = Strings.PdfPasswordPlaceholder
+                PlaceholderText = Strings.PdfPasswordPlaceholder,
+                Height = 32,
+                MinHeight = 32,
+                MaxHeight = 32,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalContentAlignment = VerticalAlignment.Center
             };
             panel.Children.Add(passwordBox);
 
