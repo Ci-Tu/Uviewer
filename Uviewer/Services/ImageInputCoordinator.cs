@@ -172,12 +172,19 @@ namespace Uviewer.Services
 
                 if (e.Delta.Scale != 1.0f)
                 {
-                    // Keep this latched through translation-only and inertia deltas.
                     _isPinchManipulation = true;
+                    _suppressTouchTap = true;
                     _host.ImageViewportNavigationService.ZoomAtPosition(
                         _createNavigationContext(),
                         e.Delta.Scale,
                         e.Position);
+                }
+                else if (!e.IsInertial && _touchPointers.Count <= 1)
+                {
+                    // A pinch can continue as a one-finger pan without starting a new
+                    // manipulation. Resume page loading for that pan, but keep taps
+                    // suppressed and do not treat pinch inertia as a page turn.
+                    _isPinchManipulation = false;
                 }
 
                 e.Handled = true;
@@ -197,7 +204,9 @@ namespace Uviewer.Services
 
         public void ManipulationCompleted()
         {
-            _host.ImageViewportNavigationService.IsTransitioning = false;
+            _isPinchManipulation = false;
+            _touchPointers.Clear();
+            // An asynchronous page load owns IsTransitioning until it finishes.
             if (_host.IsPdfMode)
             {
                 _ = _host.RerenderPdfCurrentPageAsync();
