@@ -1,6 +1,7 @@
 <UserControl
     x:Class="Uviewer.Controls.TextReaderControl"
     x:Name="TextReaderRoot"
+    Visibility="{Binding Visibility, ElementName=TextArea, Mode=OneWay}"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:app="using:Uviewer"

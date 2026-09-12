@@ -52,7 +52,8 @@ namespace Uviewer.Controls
         internal void ShowEmptyState()
         {
             EmptyStatePanel.Visibility = Visibility.Visible;
-            MainCanvas.Visibility = Visibility.Visible;
+            // The canvas is above the empty-state button and would intercept its input.
+            MainCanvas.Visibility = Visibility.Collapsed;
             HdrMainCanvas.Visibility = Visibility.Collapsed;
             HdrLeftCanvas.Visibility = Visibility.Collapsed;
             HdrRightCanvas.Visibility = Visibility.Collapsed;

@@ -1,6 +1,7 @@
 <UserControl
     x:Class="Uviewer.Controls.EpubReaderControl"
     x:Name="EpubReaderRoot"
+    Visibility="{Binding Visibility, ElementName=EpubArea, Mode=OneWay}"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:canvas="using:Microsoft.Graphics.Canvas.UI.Xaml"
