@@ -38,6 +38,7 @@ namespace Uviewer.Services
         public Action ApplyPdfClosedUi { get; init; } = null!;
         public Action<string> SetTitle { get; init; } = null!;
         public Action<string> SetStatusText { get; init; } = null!;
+        public Func<string, bool, Task<string?>> RequestPdfPasswordAsync { get; init; } = null!;
     }
 
     internal sealed class PdfDocumentController
@@ -91,12 +92,17 @@ namespace Uviewer.Services
             {
                 var pdfSession = new PdfDocumentSession(pdfPath);
                 _documentSessionTracker.Replace(pdfSession);
-                await pdfSession.LoadFileAsync();
+
+                if (!await LoadPdfSessionWithPasswordAsync(pdfSession, pdfPath))
+                {
+                    _documentSessionTracker.Clear(DocumentKind.Pdf);
+                    return;
+                }
 
                 _imageViewerState.Entries = CreatePdfEntries(pdfPath, pdfSession.PageCount);
 
                 _handlers.SetPdfGoToPageVisible(true);
-                StartPdfTocLoad(pdfPath, pdfSession.Generation, pdfSession.DocumentToken);
+                StartPdfTocLoad(pdfPath, pdfSession.Password, pdfSession.Generation, pdfSession.DocumentToken);
                 _handlers.SetSideBySideToolbarVisible(false);
                 _handlers.SetSharpenControlsVisible(false);
 
@@ -118,8 +124,82 @@ namespace Uviewer.Services
             catch (Exception ex)
             {
                 _documentSessionTracker.Clear(DocumentKind.Pdf);
-                _handlers.SetStatusText(Strings.PdfOpenFailed(ex.Message));
+                System.Diagnostics.Debug.WriteLine($"PDF open failed: 0x{ex.HResult:X8} {ex}");
+                _handlers.SetStatusText(Strings.PdfOpenFailed($"{ex.Message} (0x{ex.HResult:X8})"));
             }
+        }
+
+        /// <summary>
+        /// PDF 세션을 연다. 비밀번호가 필요한 문서면 입력 대화상자를 띄우고,
+        /// 입력이 취소되면 false를 반환한다.
+        /// </summary>
+        private async Task<bool> LoadPdfSessionWithPasswordAsync(PdfDocumentSession pdfSession, string pdfPath)
+        {
+            // Windows.Data.Pdf는 비밀번호 누락을 문서/버전에 따라 다른 오류 코드로 보고할 수 있어,
+            // PdfPig로 암호화 여부를 먼저 확인한 뒤 프롬프트를 띄운다.
+            // Do the cheap trailer check first. Some encrypted PDFs (notably AES-256/R6)
+            // are reported by different PDF readers as a generic open failure, so waiting
+            // for Windows.Data.Pdf to fail is not a reliable way to decide whether to
+            // show the password dialog.
+            bool passwordRequired = await Task.Run(() =>
+                PdfPigDocumentFactory.HasEncryptionMarker(pdfPath) ||
+                PdfPigDocumentFactory.IsEncrypted(pdfPath));
+            string? password = null;
+            bool isRetry = false;
+
+            while (true)
+            {
+                if (passwordRequired)
+                {
+                    var requested = await _handlers.RequestPdfPasswordAsync(pdfPath, isRetry);
+                    if (string.IsNullOrEmpty(requested))
+                    {
+                        _handlers.SetStatusText(Strings.PdfPasswordCancelled);
+                        return false;
+                    }
+
+                    password = requested;
+                    isRetry = true;
+                }
+
+                try
+                {
+                    // Windows.Data.Pdf cannot open AES-256/R6 PDFs. Use PDFium for
+                    // encrypted documents; keep Windows.Data.Pdf for normal PDFs.
+                    await pdfSession.LoadFileAsync(password, usePdfium: passwordRequired);
+                    return true;
+                }
+                catch (Exception ex) when (IsPdfPasswordFailure(ex, pdfPath, password))
+                {
+                    passwordRequired = true;
+                }
+            }
+        }
+
+        /// <summary>비밀번호 문제로 열기에 실패했는지 판별한다.</summary>
+        private static bool IsPdfPasswordFailure(Exception ex, string pdfPath, string? attemptedPassword)
+        {
+            if (ex is OperationCanceledException)
+            {
+                return false;
+            }
+
+            // 시도한 비밀번호가 유효한데도 실패했다면 비밀번호 문제가 아니므로 실패를 그대로 알린다.
+            if (!string.IsNullOrEmpty(attemptedPassword) &&
+                PdfPigDocumentFactory.CanOpen(pdfPath, attemptedPassword))
+            {
+                return false;
+            }
+
+            // Windows는 비밀번호 누락/불일치 시 ERROR_WRONG_PASSWORD(0x8007052B)를 반환한다.
+            if (ex.HResult == PdfDocumentSession.WrongPasswordHResult)
+            {
+                return true;
+            }
+
+            // 오류 코드가 달라도 파일에 암호화 흔적이 있으면 비밀번호 문제로 취급한다.
+            return PdfPigDocumentFactory.IsEncrypted(pdfPath) ||
+                PdfPigDocumentFactory.HasEncryptionMarker(pdfPath);
         }
 
         public async Task<bool> CloseCurrentPdfAsync()
@@ -147,9 +227,21 @@ namespace Uviewer.Services
             _imageViewerState.ClearBitmaps();
         }
 
-        public Windows.Data.Pdf.PdfDocument? CurrentDocument => CurrentPdfSession?.Document;
+        public PdfDocumentView? CurrentDocument
+        {
+            get
+            {
+                var session = CurrentPdfSession;
+                return session?.HasDocument == true
+                    ? new PdfDocumentView(session.PageCount)
+                    : null;
+            }
+        }
 
         public string? CurrentPath => CurrentPdfSession?.SourcePath;
+
+        /// <summary>현재 열려 있는 PDF를 여는 데 사용한 비밀번호(없으면 null).</summary>
+        public string? CurrentPassword => CurrentPdfSession?.Password;
 
         public bool HasOpenDocument => CurrentPdfSession?.HasDocument == true;
 
@@ -330,7 +422,7 @@ namespace Uviewer.Services
 
         private PdfDocumentSession? CurrentPdfSession => _documentSessionTracker.Current as PdfDocumentSession;
 
-        private void StartPdfTocLoad(string pdfPath, int pdfGeneration, CancellationToken token)
+        private void StartPdfTocLoad(string pdfPath, string? pdfPassword, int pdfGeneration, CancellationToken token)
         {
             _ = Task.Run(async () =>
             {
@@ -339,7 +431,7 @@ namespace Uviewer.Services
                     await Task.Delay(750, token);
                     if (!IsCurrentScope(pdfGeneration, pdfPath) || token.IsCancellationRequested) return;
 
-                    _tocService.SetProvider(new PdfTocProvider(pdfPath));
+                    _tocService.SetProvider(new PdfTocProvider(pdfPath, pdfPassword));
                     await _tocService.LoadTocAsync(token);
 
                     if (!IsCurrentScope(pdfGeneration, pdfPath)) return;

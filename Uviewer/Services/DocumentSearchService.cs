@@ -81,9 +81,13 @@ namespace Uviewer.Services
             return FindMatches(_aozoraCache, query);
         }
 
-        public async Task<IReadOnlyList<DocumentSearchMatch>> SearchPdfAsync(string pdfPath, string query, CancellationToken token)
+        public async Task<IReadOnlyList<DocumentSearchMatch>> SearchPdfAsync(
+            string pdfPath,
+            string? password,
+            string query,
+            CancellationToken token)
         {
-            return await Task.Run(() => FindPdfMatchesByPageMap(pdfPath, query, token), token);
+            return await Task.Run(() => FindPdfMatchesByPageMap(pdfPath, password, query, token), token);
         }
 
         public async Task<IReadOnlyList<DocumentSearchMatch>> SearchEpubAsync(
@@ -152,12 +156,16 @@ namespace Uviewer.Services
             return result;
         }
 
-        private static List<DocumentSearchMatch> FindPdfMatchesByPageMap(string pdfPath, string query, CancellationToken token)
+        private static List<DocumentSearchMatch> FindPdfMatchesByPageMap(
+            string pdfPath,
+            string? password,
+            string query,
+            CancellationToken token)
         {
             var result = new List<DocumentSearchMatch>();
             if (string.IsNullOrWhiteSpace(query)) return result;
 
-            using var document = PdfDocument.Open(pdfPath);
+            using var document = PdfPigDocumentFactory.Open(pdfPath, password);
             int pageIndex = 0;
             foreach (var page in document.GetPages())
             {

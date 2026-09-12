@@ -255,7 +255,12 @@ namespace Uviewer
                                 });
                             },
                             SetTitle = value => window.Title = value,
-                            SetStatusText = value => window.FileNameText.Text = value
+                            SetStatusText = value => window.FileNameText.Text = value,
+                            RequestPdfPasswordAsync = (pdfPath, isRetry) => PdfPasswordDialogService.ShowAsync(
+                                window.RootGrid.XamlRoot,
+                                window.RootGrid.ActualTheme,
+                                pdfPath,
+                                isRetry)
                         });
                 }
 

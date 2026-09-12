@@ -667,6 +667,12 @@
   <data name="ArchiveNoImages" xml:space="preserve"><value>This archive contains no images.</value></data>
   <data name="FolderNoImages" xml:space="preserve"><value>This folder contains no images.</value></data>
   <data name="PdfNoPages" xml:space="preserve"><value>This PDF contains no pages.</value></data>
+  <data name="PdfPasswordTitle" xml:space="preserve"><value>PDF Password</value></data>
+  <data name="PdfPasswordPrompt" xml:space="preserve"><value>'{0}' is password-protected. Enter the password to open it.</value></data>
+  <data name="PdfPasswordWrong" xml:space="preserve"><value>The password is incorrect. Please try again.</value></data>
+  <data name="PdfPasswordPlaceholder" xml:space="preserve"><value>Password</value></data>
+  <data name="PdfPasswordOpen" xml:space="preserve"><value>Open</value></data>
+  <data name="PdfPasswordCancelled" xml:space="preserve"><value>The PDF was not opened because password entry was cancelled.</value></data>
   <data name="WebDavNotConnected" xml:space="preserve"><value>Not connected to a WebDAV server.</value></data>
   <data name="ErrorWithMessage" xml:space="preserve"><value>Error: {0}</value></data>
   <data name="ImageLoadFailed" xml:space="preserve"><value>Image load failed: {0}</value></data>

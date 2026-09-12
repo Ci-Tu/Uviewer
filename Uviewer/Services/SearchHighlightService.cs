@@ -177,6 +177,7 @@ namespace Uviewer.Services
             string pdfPath,
             int pageIndex,
             string? query,
+            string? password,
             CancellationToken token)
         {
             if (string.IsNullOrWhiteSpace(pdfPath) || pageIndex < 0 || string.IsNullOrWhiteSpace(query))
@@ -188,7 +189,7 @@ namespace Uviewer.Services
             {
                 token.ThrowIfCancellationRequested();
 
-                using var document = PdfDocument.Open(pdfPath);
+                using var document = PdfPigDocumentFactory.Open(pdfPath, password);
                 var page = document.GetPage(pageIndex + 1);
                 var textMap = BuildPdfTextMap(page);
                 if (string.IsNullOrWhiteSpace(textMap.Text)) return (IReadOnlyList<PdfSearchHighlight>)Array.Empty<PdfSearchHighlight>();

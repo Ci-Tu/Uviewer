@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Threading;
 using Uviewer.Models;
 using Uviewer.Services;
-using Windows.Data.Pdf;
 
 namespace Uviewer
 {
@@ -113,7 +112,7 @@ namespace Uviewer
         private bool _matchControlDirection = false;
         private int _pendingPdfPageIndex = -1;
 
-        private PdfDocument? _currentPdfDocument => _pdfDocumentController?.CurrentDocument;
+        private PdfDocumentView? _currentPdfDocument => _pdfDocumentController?.CurrentDocument;
         private string? _currentPdfPath => _pdfDocumentController?.CurrentPath;
 
         private EpubSession _epubSession => _epubReaderController.Session;

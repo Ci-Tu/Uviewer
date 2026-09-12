@@ -12,7 +12,6 @@ using System.Threading.Tasks;
 using Uviewer.Controls;
 using Uviewer.Models;
 using Uviewer.Services;
-using Windows.Data.Pdf;
 
 namespace Uviewer
 {
@@ -100,7 +99,7 @@ namespace Uviewer
             public int CurrentIndex { get => _window._imageViewerState.CurrentIndex; set => _window._imageViewerState.CurrentIndex = value; }
             public List<ImageEntry> ImageEntries { get => _window._imageViewerState.Entries; set => _window._imageViewerState.Entries = value ?? new List<ImageEntry>(); }
             public CanvasBitmap? CurrentBitmap => _window._imageViewerState.CurrentBitmap;
-            public PdfDocument? CurrentPdfDocument => _window._currentPdfDocument;
+            public PdfDocumentView? CurrentPdfDocument => _window._currentPdfDocument;
 
             public Task AddToRecentAsync(bool immediate) => _window._bookmarkInteractionController.AddCurrentRecentAsync(immediate);
             public void SyncSidebarSelection(ImageEntry entry) => _window._imageViewerController.SyncSidebarSelection(entry);

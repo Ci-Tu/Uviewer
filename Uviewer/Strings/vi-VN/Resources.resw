@@ -667,6 +667,12 @@
   <data name="ArchiveNoImages" xml:space="preserve"><value>Tệp nén này không chứa hình ảnh.</value></data>
   <data name="FolderNoImages" xml:space="preserve"><value>Thư mục này không chứa hình ảnh.</value></data>
   <data name="PdfNoPages" xml:space="preserve"><value>Tệp PDF này không có trang nào.</value></data>
+  <data name="PdfPasswordTitle" xml:space="preserve"><value>Mật khẩu PDF</value></data>
+  <data name="PdfPasswordPrompt" xml:space="preserve"><value>'{0}' được bảo vệ bằng mật khẩu. Hãy nhập mật khẩu.</value></data>
+  <data name="PdfPasswordWrong" xml:space="preserve"><value>Mật khẩu không đúng. Vui lòng thử lại.</value></data>
+  <data name="PdfPasswordPlaceholder" xml:space="preserve"><value>Mật khẩu</value></data>
+  <data name="PdfPasswordOpen" xml:space="preserve"><value>Mở</value></data>
+  <data name="PdfPasswordCancelled" xml:space="preserve"><value>Đã hủy nhập mật khẩu nên PDF không được mở.</value></data>
   <data name="WebDavNotConnected" xml:space="preserve"><value>Chưa kết nối với máy chủ WebDAV.</value></data>
   <data name="ErrorWithMessage" xml:space="preserve"><value>Lỗi: {0}</value></data>
   <data name="ImageLoadFailed" xml:space="preserve"><value>Tải hình ảnh thất bại: {0}</value></data>

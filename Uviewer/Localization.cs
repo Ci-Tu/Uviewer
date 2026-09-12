@@ -152,6 +152,11 @@ namespace Uviewer
         public static string ArchiveNoImages => GetString("ArchiveNoImages");
         public static string FolderNoImages => GetString("FolderNoImages");
         public static string PdfNoPages => GetString("PdfNoPages");
+        public static string PdfPasswordTitle => GetString("PdfPasswordTitle");
+        public static string PdfPasswordWrong => GetString("PdfPasswordWrong");
+        public static string PdfPasswordPlaceholder => GetString("PdfPasswordPlaceholder");
+        public static string PdfPasswordOpen => GetString("PdfPasswordOpen");
+        public static string PdfPasswordCancelled => GetString("PdfPasswordCancelled");
         public static string WebDavNotConnected => GetString("WebDavNotConnected");
         public static string ApplicationDescription => GetString("ApplicationDescription");
         public static string WindowTitle => GetString("WindowTitle");
@@ -277,6 +282,7 @@ namespace Uviewer
         public static string TextLoadFailed(string msg) => string.Format(GetString("TextLoadFailed"), msg);
         public static string ArchiveTextLoadFailed(string msg) => string.Format(GetString("ArchiveTextLoadFailed"), msg);
         public static string PdfOpenFailed(string msg) => string.Format(GetString("PdfOpenFailed"), msg);
+        public static string PdfPasswordPromptForFile(string fileName) => string.Format(GetString("PdfPasswordPrompt"), fileName);
         public static string FileOpenFailed(string msg) => string.Format(GetString("FileOpenFailed"), msg);
         public static string WebDavError(string msg) => string.Format(GetString("WebDavError"), msg);
         public static string WebDavServerSaved(string name) => string.Format(GetString("WebDavServerSaved"), name);

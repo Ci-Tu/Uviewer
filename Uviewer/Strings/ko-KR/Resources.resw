@@ -667,6 +667,12 @@
   <data name="ArchiveNoImages" xml:space="preserve"><value>이 압축 파일에 이미지가 없습니다.</value></data>
   <data name="FolderNoImages" xml:space="preserve"><value>이 폴더에 이미지가 없습니다.</value></data>
   <data name="PdfNoPages" xml:space="preserve"><value>이 PDF 파일에 페이지가 없습니다.</value></data>
+  <data name="PdfPasswordTitle" xml:space="preserve"><value>PDF 비밀번호</value></data>
+  <data name="PdfPasswordPrompt" xml:space="preserve"><value>'{0}' 파일은 비밀번호로 보호되어 있습니다. 비밀번호를 입력하세요.</value></data>
+  <data name="PdfPasswordWrong" xml:space="preserve"><value>비밀번호가 올바르지 않습니다. 다시 시도하세요.</value></data>
+  <data name="PdfPasswordPlaceholder" xml:space="preserve"><value>비밀번호</value></data>
+  <data name="PdfPasswordOpen" xml:space="preserve"><value>열기</value></data>
+  <data name="PdfPasswordCancelled" xml:space="preserve"><value>비밀번호 입력이 취소되어 PDF를 열지 않았습니다.</value></data>
   <data name="WebDavNotConnected" xml:space="preserve"><value>WebDAV 서버에 연결되지 않았습니다.</value></data>
   <data name="ErrorWithMessage" xml:space="preserve"><value>오류: {0}</value></data>
   <data name="ImageLoadFailed" xml:space="preserve"><value>이미지 로드 실패: {0}</value></data>

@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 using Uviewer.Controls;
 using Uviewer.Models;
 using Uviewer.Services;
-using Windows.Data.Pdf;
 
 namespace Uviewer
 {
@@ -167,7 +166,7 @@ namespace Uviewer
         internal int _currentIndex { get => _imageNavigationHost.CurrentIndex; set => _imageNavigationHost.CurrentIndex = value; }
         internal List<ImageEntry> _imageEntries { get => _imageNavigationHost.ImageEntries; set => _imageNavigationHost.ImageEntries = value; }
         internal CanvasBitmap? _currentBitmap => _imageNavigationHost.CurrentBitmap;
-        internal PdfDocument? _currentPdfDocument => _imageNavigationHost.CurrentPdfDocument;
+        internal PdfDocumentView? _currentPdfDocument => _imageNavigationHost.CurrentPdfDocument;
         internal string? _activeSearchQuery => _searchHost.ActiveSearchQuery;
         internal int _currentEpubChapterIndex { get => _epubNavigationHost.CurrentEpubChapterIndex; set => _epubNavigationHost.CurrentEpubChapterIndex = value; }
         internal int _currentEpubPageIndex { get => _epubNavigationHost.CurrentEpubPageIndex; set => _epubNavigationHost.CurrentEpubPageIndex = value; }

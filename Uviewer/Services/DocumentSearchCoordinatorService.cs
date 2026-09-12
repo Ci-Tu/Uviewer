@@ -39,6 +39,7 @@ namespace Uviewer.Services
         public bool IsMarkdownRenderMode { get; init; }
         public bool IsPdfMode { get; init; }
         public string? CurrentPdfPath { get; init; }
+        public string? CurrentPdfPassword { get; init; }
         public string EpubCacheKey { get; init; } = string.Empty;
         public int EpubSpineCount { get; init; }
         public int CurrentIndex { get; init; }
@@ -129,7 +130,12 @@ namespace Uviewer.Services
 
             try
             {
-                var highlights = await context.HighlightService.FindPdfHighlightsAsync(pdfPath, pageIndex, query, token);
+                var highlights = await context.HighlightService.FindPdfHighlightsAsync(
+                    pdfPath,
+                    pageIndex,
+                    query,
+                    context.CurrentPdfPassword,
+                    token);
                 if (token.IsCancellationRequested) return;
                 if (!string.Equals(context.GetCurrentPdfPath(), pdfPath, StringComparison.OrdinalIgnoreCase)) return;
                 if (context.GetCurrentIndex() != pageIndex) return;
@@ -183,7 +189,11 @@ namespace Uviewer.Services
             if (context.IsPdfMode && !string.IsNullOrEmpty(context.CurrentPdfPath))
             {
                 context.DisableVerticalModeForImageDocument();
-                return await context.DocumentSearchService.SearchPdfAsync(context.CurrentPdfPath, query, token);
+                return await context.DocumentSearchService.SearchPdfAsync(
+                    context.CurrentPdfPath,
+                    context.CurrentPdfPassword,
+                    query,
+                    token);
             }
 
             if (context.IsEpubMode && context.EpubSession.HasDocument)

@@ -114,6 +114,21 @@ namespace Uviewer.Services
         }
     }
 
+    /// <summary>
+    /// The PDF information exposed to the rest of the reader. The actual rendering
+    /// backend may be Windows.Data.Pdf or PDFium, so callers should only depend on
+    /// the common page-count information here.
+    /// </summary>
+    internal sealed class PdfDocumentView
+    {
+        public PdfDocumentView(uint pageCount)
+        {
+            PageCount = pageCount;
+        }
+
+        public uint PageCount { get; }
+    }
+
     public sealed class WebDavDocumentSession : DocumentSessionBase
     {
         public WebDavDocumentSession(string sourcePath, string? displayName = null)

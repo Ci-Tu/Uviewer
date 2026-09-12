@@ -65,10 +65,12 @@ namespace Uviewer.Services
     public class PdfTocProvider : ITocProvider
     {
         private readonly string _pdfPath;
+        private readonly string? _password;
 
-        public PdfTocProvider(string pdfPath)
+        public PdfTocProvider(string pdfPath, string? password = null)
         {
             _pdfPath = pdfPath;
+            _password = password;
         }
 
         public Task<List<TocItem>> GetTocAsync(CancellationToken token = default)
@@ -79,7 +81,7 @@ namespace Uviewer.Services
                 // We use UglyToad directly here for faster background parsing
                 try
                 {
-                    using var pdfDocument = UglyToad.PdfPig.PdfDocument.Open(_pdfPath);
+                    using var pdfDocument = PdfPigDocumentFactory.Open(_pdfPath, _password);
                     if (pdfDocument.TryGetBookmarks(out var bookmarks))
                     {
                         ParseBookmarks(bookmarks.GetNodes().ToList(), 1, toc);

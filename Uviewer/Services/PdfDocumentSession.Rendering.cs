@@ -1,5 +1,6 @@
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.UI.Xaml;
+using SkiaSharp;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,17 +19,34 @@ namespace Uviewer.Services
 
         private CancellationTokenSource? _zoomRerenderCts;
         private CancellationTokenSource? _documentCts;
+        private PdfiumPdfDocument? _pdfiumDocument;
         private int _generation;
 
+        // HRESULT_FROM_WIN32(ERROR_WRONG_PASSWORD): 비밀번호 누락/불일치 시 Windows.Data.Pdf가 반환한다.
+        public const int WrongPasswordHResult = unchecked((int)0x8007052B);
+
+        // E_FAIL: 비밀번호가 필요한 PDF를 비밀번호 없이 열 때 반환될 수 있는 일반 실패 코드.
+        public const int GenericFailHResult = unchecked((int)0x80004005);
+
+        // Windows.Data.Pdf returns this for unsupported PDF variants, including
+        // AES-256 encrypted PDFs on Windows versions where that format is unsupported.
+        public const int UnsupportedPdfHResult = unchecked((int)0x80048040);
+
         public PdfDocument? Document { get; private set; }
-        public bool HasDocument => Document != null;
-        public uint PageCount => Document?.PageCount ?? 0;
+        public bool HasDocument => Document != null || _pdfiumDocument != null;
+        public uint PageCount => Document?.PageCount ?? (uint)(_pdfiumDocument?.PageCount ?? 0);
         public int Generation => Volatile.Read(ref _generation);
         public CancellationToken DocumentToken => _documentCts?.Token ?? CancellationToken.None;
+        public string? Password { get; private set; }
 
         public override Task OpenAsync(CancellationToken token) => LoadFileAsync(token);
 
-        public async Task LoadFileAsync(CancellationToken token = default)
+        public Task LoadFileAsync(CancellationToken token = default) => LoadFileAsync(null, false, token);
+
+        public async Task LoadFileAsync(
+            string? password,
+            bool usePdfium = false,
+            CancellationToken token = default)
         {
             if (string.IsNullOrWhiteSpace(SourcePath))
             {
@@ -40,9 +58,22 @@ namespace Uviewer.Services
             {
                 CloseInternal();
 
-                var file = await StorageFile.GetFileFromPathAsync(SourcePath);
                 StartNewDocumentScope();
-                Document = await PdfDocument.LoadFromFileAsync(file);
+                if (usePdfium)
+                {
+                    _pdfiumDocument = await Task.Run(
+                        () => PdfiumPdfDocument.Open(SourcePath, password),
+                        token);
+                }
+                else
+                {
+                    var file = await StorageFile.GetFileFromPathAsync(SourcePath);
+                    Document = string.IsNullOrEmpty(password)
+                        ? await PdfDocument.LoadFromFileAsync(file)
+                        : await PdfDocument.LoadFromFileAsync(file, password);
+                }
+
+                Password = password;
             }
             finally
             {
@@ -95,6 +126,9 @@ namespace Uviewer.Services
         {
             CancelOperations();
             Document = null;
+            _pdfiumDocument?.Dispose();
+            _pdfiumDocument = null;
+            Password = null;
         }
 
         public void CancelOperations()
@@ -113,13 +147,13 @@ namespace Uviewer.Services
 
         public bool IsCurrentPath(string pdfPath)
         {
-            return Document != null &&
+            return HasDocument &&
                 string.Equals(SourcePath, pdfPath, StringComparison.OrdinalIgnoreCase);
         }
 
         public bool IsCurrentScope(int generation, string? pdfPath)
         {
-            return Document != null &&
+            return HasDocument &&
                 Volatile.Read(ref _generation) == generation &&
                 (pdfPath == null || string.Equals(SourcePath, pdfPath, StringComparison.OrdinalIgnoreCase));
         }
@@ -131,12 +165,32 @@ namespace Uviewer.Services
             CanvasBitmap bitmap)
         {
             var pdfDoc = Document;
-            if (pdfDoc == null || pageIndex >= pdfDoc.PageCount) return false;
+            var pdfiumDoc = _pdfiumDocument;
+            if (pdfDoc == null && pdfiumDoc == null) return false;
+            if (pageIndex >= PageCount) return false;
 
             try
             {
-                using var pdfPage = pdfDoc.GetPage(pageIndex);
-                var (width, height) = CalculateRenderDimensions(pdfPage, canvas, zoomLevel);
+                double pageWidth;
+                double pageHeight;
+                if (pdfDoc != null)
+                {
+                    using var pdfPage = pdfDoc.GetPage(pageIndex);
+                    pageWidth = pdfPage.Size.Width;
+                    pageHeight = pdfPage.Size.Height;
+                }
+                else
+                {
+                    var pageSize = pdfiumDoc!.GetPageSize(pageIndex);
+                    pageWidth = pageSize.Width;
+                    pageHeight = pageSize.Height;
+                }
+
+                var (width, height) = CalculateRenderDimensions(
+                    pageWidth,
+                    pageHeight,
+                    canvas,
+                    zoomLevel);
                 var bitmapSize = bitmap.SizeInPixels;
 
                 // A larger existing render is at least as sharp as a newly requested
@@ -160,9 +214,10 @@ namespace Uviewer.Services
             if (isWindowClosing() || token.IsCancellationRequested) return null;
 
             var pdfDoc = Document;
+            var pdfiumDoc = _pdfiumDocument;
             int pdfGenerationAtStart = Volatile.Read(ref _generation);
             string? pdfPathAtStart = SourcePath;
-            if (pdfDoc == null || pageIndex >= pdfDoc.PageCount) return null;
+            if ((pdfDoc == null && pdfiumDoc == null) || pageIndex >= PageCount) return null;
 
             try
             {
@@ -179,7 +234,21 @@ namespace Uviewer.Services
                 {
                     if (isWindowClosing() || linkedToken.IsCancellationRequested || !IsCurrentScope(pdfGenerationAtStart, pdfPathAtStart)) return null;
 
-                    using var pdfPage = pdfDoc.GetPage(pageIndex);
+                    if (pdfiumDoc != null)
+                    {
+                        return await LoadPdfiumPageBitmapAsync(
+                            pdfiumDoc,
+                            pageIndex,
+                            canvas,
+                            zoomLevel,
+                            isWindowClosing,
+                            pdfGenerationAtStart,
+                            pdfPathAtStart,
+                            linkedToken,
+                            isPreload);
+                    }
+
+                    using var pdfPage = pdfDoc!.GetPage(pageIndex);
                     using var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
                     var (destinationWidth, destinationHeight) =
                         CalculateRenderDimensions(pdfPage, canvas, zoomLevel, isPreload);
@@ -237,8 +306,98 @@ namespace Uviewer.Services
             }
         }
 
+        private async Task<CanvasBitmap?> LoadPdfiumPageBitmapAsync(
+            PdfiumPdfDocument pdfiumDoc,
+            uint pageIndex,
+            CanvasControl canvas,
+            double zoomLevel,
+            Func<bool> isWindowClosing,
+            int pdfGenerationAtStart,
+            string? pdfPathAtStart,
+            CancellationToken token,
+            bool isPreload)
+        {
+            var pageSize = pdfiumDoc.GetPageSize(pageIndex);
+            var (destinationWidth, destinationHeight) = CalculateRenderDimensions(
+                pageSize.Width,
+                pageSize.Height,
+                canvas,
+                zoomLevel,
+                isPreload);
+
+            // PDFium performs the native render on a worker thread. Its wrapper
+            // serializes calls internally because PDFium is not thread-safe.
+            using var skBitmap = await Task.Run(
+                () => pdfiumDoc.Render(pageIndex, destinationWidth, destinationHeight, token),
+                token);
+
+            if (isWindowClosing() || token.IsCancellationRequested ||
+                !IsCurrentScopeForRender(pdfiumDoc, pdfGenerationAtStart, pdfPathAtStart))
+            {
+                return null;
+            }
+
+            using var encoded = skBitmap.Encode(SKEncodedImageFormat.Png, 100);
+            if (encoded == null)
+            {
+                return null;
+            }
+
+            using var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+            using (var writer = new Windows.Storage.Streams.DataWriter(stream))
+            {
+                writer.WriteBytes(encoded.ToArray());
+                await writer.StoreAsync().AsTask(token);
+                await writer.FlushAsync().AsTask(token);
+                writer.DetachStream();
+            }
+
+            stream.Seek(0);
+            var device = canvas.Device ?? CanvasDevice.GetSharedDevice();
+            var loadOperation = CanvasBitmap.LoadAsync(device, stream, 96.0f);
+            using var loadCancel = token.Register(() =>
+            {
+                try { loadOperation.Cancel(); }
+                catch { }
+            });
+            var bitmap = await loadOperation.AsTask(token);
+
+            if (isWindowClosing() || token.IsCancellationRequested ||
+                !IsCurrentScopeForRender(pdfiumDoc, pdfGenerationAtStart, pdfPathAtStart))
+            {
+                bitmap.Dispose();
+                return null;
+            }
+
+            return bitmap;
+        }
+
+        private bool IsCurrentScopeForRender(
+            PdfiumPdfDocument pdfiumDoc,
+            int generation,
+            string? pdfPath)
+        {
+            return ReferenceEquals(_pdfiumDocument, pdfiumDoc) &&
+                IsCurrentScope(generation, pdfPath);
+        }
+
         private static (uint Width, uint Height) CalculateRenderDimensions(
             PdfPage pdfPage,
+            CanvasControl canvas,
+            double zoomLevel,
+            bool isPreload = false)
+        {
+            return CalculateRenderDimensions(
+                pdfPage.Size.Width,
+                pdfPage.Size.Height,
+                canvas,
+                zoomLevel,
+                isPreload);
+        }
+
+        private static (uint Width, uint Height) CalculateRenderDimensions(
+            double pageWidth,
+            double pageHeight,
             CanvasControl canvas,
             double zoomLevel,
             bool isPreload = false)
@@ -252,7 +411,7 @@ namespace Uviewer.Services
             if (canvasWidth <= 0) canvasWidth = 1000;
             if (canvasHeight <= 0) canvasHeight = 1000;
 
-            double pageAR = pdfPage.Size.Width / pdfPage.Size.Height;
+            double pageAR = pageWidth / pageHeight;
             double canvasAR = canvasWidth / canvasHeight;
             double visibleWidthInDips = pageAR > canvasAR
                 ? canvasWidth
@@ -272,13 +431,13 @@ namespace Uviewer.Services
             // unusually tall pages. Foreground rendering retains full resolution.
             if (isPreload) targetWidth = Math.Min(targetWidth, Math.Sqrt(6_000_000 * pageAR));
 
-            double scale = pdfPage.Size.Width > 0
-                ? targetWidth / pdfPage.Size.Width
+            double scale = pageWidth > 0
+                ? targetWidth / pageWidth
                 : 1.0;
 
             return (
-                Math.Max(1, (uint)Math.Round(pdfPage.Size.Width * scale)),
-                Math.Max(1, (uint)Math.Round(pdfPage.Size.Height * scale)));
+                Math.Max(1, (uint)Math.Round(pageWidth * scale)),
+                Math.Max(1, (uint)Math.Round(pageHeight * scale)));
         }
 
         private void StartNewDocumentScope()
@@ -292,6 +451,9 @@ namespace Uviewer.Services
         {
             CancelOperations();
             Document = null;
+            _pdfiumDocument?.Dispose();
+            _pdfiumDocument = null;
+            Password = null;
             _zoomRerenderCts?.Dispose();
             _zoomRerenderCts = null;
             _documentCts?.Dispose();

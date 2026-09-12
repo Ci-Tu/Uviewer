@@ -11,7 +11,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Uviewer.Controls;
 using Uviewer.Models;
-using Windows.Data.Pdf;
 
 namespace Uviewer.Services
 {
@@ -74,7 +73,7 @@ namespace Uviewer.Services
         int CurrentIndex { get; set; }
         List<ImageEntry> ImageEntries { get; set; }
         CanvasBitmap? CurrentBitmap { get; }
-        PdfDocument? CurrentPdfDocument { get; }
+        PdfDocumentView? CurrentPdfDocument { get; }
 
         Task AddToRecentAsync(bool immediate);
         void SyncSidebarSelection(ImageEntry entry);

@@ -46,6 +46,7 @@ namespace Uviewer
                         IsMarkdownRenderMode = window._isMarkdownRenderMode,
                         IsPdfMode = window._currentPdfDocument != null,
                         CurrentPdfPath = window._currentPdfPath,
+                        CurrentPdfPassword = window._pdfDocumentController.CurrentPassword,
                         EpubCacheKey = $"epub:{window._currentEpubFilePath ?? window._currentEpubDisplayName ?? string.Empty}:{window._epubSpine.Count}",
                         EpubSpineCount = window._epubSpine.Count,
                         CurrentIndex = window._currentIndex,

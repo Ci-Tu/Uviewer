@@ -667,6 +667,12 @@
   <data name="ArchiveNoImages" xml:space="preserve"><value>此壓縮檔中沒有影像。</value></data>
   <data name="FolderNoImages" xml:space="preserve"><value>此資料夾中沒有影像。</value></data>
   <data name="PdfNoPages" xml:space="preserve"><value>此 PDF 中沒有頁面。</value></data>
+  <data name="PdfPasswordTitle" xml:space="preserve"><value>PDF 密碼</value></data>
+  <data name="PdfPasswordPrompt" xml:space="preserve"><value>'{0}' 受密碼保護。請輸入密碼。</value></data>
+  <data name="PdfPasswordWrong" xml:space="preserve"><value>密碼不正確，請重試。</value></data>
+  <data name="PdfPasswordPlaceholder" xml:space="preserve"><value>密碼</value></data>
+  <data name="PdfPasswordOpen" xml:space="preserve"><value>開啟</value></data>
+  <data name="PdfPasswordCancelled" xml:space="preserve"><value>已取消輸入密碼，未開啟 PDF。</value></data>
   <data name="WebDavNotConnected" xml:space="preserve"><value>未連線到 WebDAV 伺服器。</value></data>
   <data name="ErrorWithMessage" xml:space="preserve"><value>錯誤：{0}</value></data>
   <data name="ImageLoadFailed" xml:space="preserve"><value>影像載入失敗：{0}</value></data>
