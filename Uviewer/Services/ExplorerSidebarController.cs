@@ -68,6 +68,9 @@ namespace Uviewer.Services
         private readonly IExplorerSidebarHost _host;
         private readonly IntPtr _windowHandle;
         private bool _isUpdatingFilter;
+        private readonly List<ExplorerNavigationEntry> _navigationHistory = new();
+        private int _navigationHistoryIndex = -1;
+        private bool _isNavigatingHistory;
 
         public ExplorerSidebarController(
             ExplorerController explorerController,
@@ -141,6 +144,8 @@ namespace Uviewer.Services
 
         public void LoadFolder(string path)
         {
+            RecordNavigation(isWebDav: false, path);
+
             if (_host.IsWebDavMode)
             {
                 _host.ClearWebDavForLocalExplorer();
@@ -156,6 +161,86 @@ namespace Uviewer.Services
                     SyncCurrentExplorerSelection();
                 });
         }
+
+        /// <summary>
+        /// 방문한 탐색기 위치를 기록해 마우스 뒤로/앞으로 버튼으로 다시 방문할 수 있게 한다.
+        /// 연속 중복 항목은 무시하고, 새 위치를 기록하면 앞으로 가기 항목은 버린다.
+        /// </summary>
+        public void RecordNavigation(bool isWebDav, string? path)
+        {
+            if (_isNavigatingHistory || string.IsNullOrEmpty(path))
+            {
+                return;
+            }
+
+            var entry = new ExplorerNavigationEntry(isWebDav, path);
+            if (_navigationHistoryIndex >= 0)
+            {
+                var current = _navigationHistory[_navigationHistoryIndex];
+                if (current.IsWebDav == entry.IsWebDav &&
+                    string.Equals(current.Path, entry.Path, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                if (_navigationHistoryIndex < _navigationHistory.Count - 1)
+                {
+                    _navigationHistory.RemoveRange(
+                        _navigationHistoryIndex + 1,
+                        _navigationHistory.Count - _navigationHistoryIndex - 1);
+                }
+            }
+
+            _navigationHistory.Add(entry);
+            _navigationHistoryIndex = _navigationHistory.Count - 1;
+        }
+
+        public Task NavigateBackAsync() => NavigateInHistoryAsync(-1);
+
+        public Task NavigateForwardAsync() => NavigateInHistoryAsync(1);
+
+        private async Task NavigateInHistoryAsync(int offset)
+        {
+            var targetIndex = _navigationHistoryIndex + offset;
+            if (targetIndex < 0 || targetIndex >= _navigationHistory.Count)
+            {
+                return;
+            }
+
+            var entry = _navigationHistory[targetIndex];
+            if (entry.IsWebDav)
+            {
+                if (!_host.IsWebDavMode)
+                {
+                    return;
+                }
+            }
+            else if (!Directory.Exists(entry.Path))
+            {
+                _host.ShowNotification(Strings.FileNotFound, "\uE7BA", "Red");
+                return;
+            }
+
+            _navigationHistoryIndex = targetIndex;
+            _isNavigatingHistory = true;
+            try
+            {
+                if (entry.IsWebDav)
+                {
+                    await _host.LoadWebDavFolderAsync(entry.Path);
+                }
+                else
+                {
+                    LoadFolder(entry.Path);
+                }
+            }
+            finally
+            {
+                _isNavigatingHistory = false;
+            }
+        }
+
+        private readonly record struct ExplorerNavigationEntry(bool IsWebDav, string Path);
 
         public async Task HandleBreadcrumbNavigationAsync(BreadcrumbNavigationRequestedEventArgs args)
         {

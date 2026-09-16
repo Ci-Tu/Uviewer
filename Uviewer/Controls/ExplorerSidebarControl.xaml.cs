@@ -1,7 +1,9 @@
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -13,11 +15,40 @@ namespace Uviewer.Controls
         private bool _isArrangingOverflow;
         private bool _overflowUpdateQueued;
 
+        /// <summary>Raised when the mouse back button (XButton1) is pressed over the sidebar.</summary>
+        internal event EventHandler? NavigateBackRequested;
+
+        /// <summary>Raised when the mouse forward button (XButton2) is pressed over the sidebar.</summary>
+        internal event EventHandler? NavigateForwardRequested;
+
         public ExplorerSidebarControl()
         {
             InitializeComponent();
             Loaded += (_, _) => QueueOverflowUpdate();
             SidebarToolbarRoot.SizeChanged += (_, _) => QueueOverflowUpdate();
+            // ListView/GridView mark pointer presses as handled, so listen even for handled events.
+            AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler(OnPointerPressed), true);
+        }
+
+        private void OnPointerPressed(object sender, PointerRoutedEventArgs e)
+        {
+            if (e.Pointer.PointerDeviceType != Microsoft.UI.Input.PointerDeviceType.Mouse)
+            {
+                return;
+            }
+
+            switch (e.GetCurrentPoint(this).Properties.PointerUpdateKind)
+            {
+                case Microsoft.UI.Input.PointerUpdateKind.XButton1Pressed:
+                    e.Handled = true;
+                    NavigateBackRequested?.Invoke(this, EventArgs.Empty);
+                    break;
+
+                case Microsoft.UI.Input.PointerUpdateKind.XButton2Pressed:
+                    e.Handled = true;
+                    NavigateForwardRequested?.Invoke(this, EventArgs.Empty);
+                    break;
+            }
         }
 
         private void QueueOverflowUpdate()

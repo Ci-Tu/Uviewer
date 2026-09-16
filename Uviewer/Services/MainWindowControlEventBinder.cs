@@ -13,6 +13,7 @@ namespace Uviewer.Services
 {
     internal sealed class ExplorerSidebarControlParts
     {
+        public ExplorerSidebarControl ExplorerSidebar { get; init; } = null!;
         public Button ToggleViewButton { get; init; } = null!;
         public Slider ThumbnailSizeSlider { get; init; } = null!;
         public CheckBox FolderThumbnailsCheckBox { get; init; } = null!;
@@ -158,6 +159,8 @@ namespace Uviewer.Services
             _sidebar.FolderThumbnailsCheckBox.Unchecked += (_, _) =>
                 explorer.HandleFolderThumbnailsChanged(_sidebar.FolderThumbnailsCheckBox.IsChecked == true);
             _sidebar.ParentFolderButton.Click += (_, _) => explorer.HandleParentFolderClick();
+            _sidebar.ExplorerSidebar.NavigateBackRequested += (_, _) => RunAsync(explorer.NavigateBackAsync);
+            _sidebar.ExplorerSidebar.NavigateForwardRequested += (_, _) => RunAsync(explorer.NavigateForwardAsync);
             _sidebar.CurrentPathBreadcrumb.NavigationRequested += (_, e) =>
                 RunAsync(() => explorer.HandleBreadcrumbNavigationAsync(e));
             _sidebar.SidebarAddToFavoritesButton.Click += (_, _) => RunAsync(() => bookmarks.AddCurrentFavoriteAsync());

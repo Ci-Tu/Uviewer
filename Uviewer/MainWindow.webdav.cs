@@ -194,6 +194,8 @@ namespace Uviewer
                 _currentWebDavPath = remotePath;
                 _currentExplorerPath = null; // 로컬 경로 초기화
 
+                _explorerSidebarController.RecordNavigation(isWebDav: true, remotePath);
+
                 CurrentPathBreadcrumb.SetWebDavPath(_webDavService.CurrentServer.ServerName, remotePath);
 
                 _imageViewerController.ClearImageResources();

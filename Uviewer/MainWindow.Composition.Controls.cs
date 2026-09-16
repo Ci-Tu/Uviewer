@@ -121,6 +121,7 @@ namespace Uviewer
                         window.EpubReader,
                         new ExplorerSidebarControlParts
                         {
+                            ExplorerSidebar = window.ExplorerSidebar,
                             ToggleViewButton = window.ToggleViewButton,
                             ThumbnailSizeSlider = window.ThumbnailSizeSlider,
                             FolderThumbnailsCheckBox = window.FolderThumbnailsCheckBox,
