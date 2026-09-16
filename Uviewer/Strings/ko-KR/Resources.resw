@@ -155,10 +155,10 @@
     <value>닫기(Esc)</value>
   </data>
   <data name="ToggleViewTooltip" xml:space="preserve">
-    <value>썸네일 보기</value>
+    <value>썸네일 보기(Ctrl+3)</value>
   </data>
   <data name="ListViewTooltip" xml:space="preserve">
-    <value>리스트 보기</value>
+    <value>리스트 보기(Ctrl+3)</value>
   </data>
   <data name="RightClickSettingsHint" xml:space="preserve">
     <value>우클릭으로 설정</value>

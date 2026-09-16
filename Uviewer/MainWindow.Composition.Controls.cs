@@ -148,6 +148,7 @@ namespace Uviewer
                             EpubReaderController = window._epubReaderController,
                             FileOpenController = window._fileOpenController,
                             ExplorerSidebarController = window._explorerSidebarController,
+                            ToggleSidebarWidth = () => window._windowShellController.ToggleSidebarWidth(),
                             BookmarkInteractionController = window._bookmarkInteractionController,
                             WebDavFlyoutOpened = window.WebDavFlyout_Opened,
                             AddWebDavButtonClicked = window.AddWebDavButton_Click,

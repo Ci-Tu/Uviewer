@@ -52,11 +52,6 @@ namespace Uviewer.Services
             _state.SortMode = sortMode;
         }
 
-        public void ToggleViewMode()
-        {
-            _state.IsGridView = !_state.IsGridView;
-        }
-
         public void SetViewMode(bool isGrid)
         {
             _state.IsGridView = isGrid;

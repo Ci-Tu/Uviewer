@@ -155,10 +155,10 @@
     <value>Đóng (Esc)</value>
   </data>
   <data name="ToggleViewTooltip" xml:space="preserve">
-    <value>Xem hình thu nhỏ</value>
+    <value>Xem hình thu nhỏ (Ctrl+3)</value>
   </data>
   <data name="ListViewTooltip" xml:space="preserve">
-    <value>Xem danh sách</value>
+    <value>Xem danh sách (Ctrl+3)</value>
   </data>
   <data name="RightClickSettingsHint" xml:space="preserve">
     <value>Nhấp chuột phải để cài đặt</value>

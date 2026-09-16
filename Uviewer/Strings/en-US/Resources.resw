@@ -155,10 +155,10 @@
     <value>Close (Esc)</value>
   </data>
   <data name="ToggleViewTooltip" xml:space="preserve">
-    <value>Thumbnail View</value>
+    <value>Thumbnail View (Ctrl+3)</value>
   </data>
   <data name="ListViewTooltip" xml:space="preserve">
-    <value>List View</value>
+    <value>List View (Ctrl+3)</value>
   </data>
   <data name="RightClickSettingsHint" xml:space="preserve">
     <value>Right-click for settings</value>

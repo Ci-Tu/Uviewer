@@ -63,7 +63,7 @@
 - **Auto Side-by-Side in Archive**: When enabled, the viewer automatically applies side-by-side (2-page) view for portrait-oriented images (height = width * 1.2~3) when browsing archives and EPUB, provided the window width is at least 1.2 times its height.
 
 #### 🗂️ Explorer Thumbnail Settings
-- **Thumbnail Button Settings**: Right-click the sidebar thumbnail/list toggle button to open thumbnail settings.
+- **Thumbnail Button Settings**: Left-click the sidebar thumbnail/list toggle button (**Ctrl+3**) to toggle the sidebar between the list view and the 2.5x-wide thumbnail view; right-click it to open thumbnail settings. The button is dimmed (disabled) in fullscreen or while UI auto-hide is on.
   - **Thumbnail Size**: Adjust the thumbnail grid size with a slider and preview the result immediately.
   - **Folder Thumbnails**: When enabled, folders show the first image inside the folder as their thumbnail.
 

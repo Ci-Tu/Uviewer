@@ -155,10 +155,10 @@
     <value>閉じる(Esc)</value>
   </data>
   <data name="ToggleViewTooltip" xml:space="preserve">
-    <value>サムネイル表示</value>
+    <value>サムネイル表示(Ctrl+3)</value>
   </data>
   <data name="ListViewTooltip" xml:space="preserve">
-    <value>リスト表示</value>
+    <value>リスト表示(Ctrl+3)</value>
   </data>
   <data name="RightClickSettingsHint" xml:space="preserve">
     <value>右クリックで設定</value>

@@ -155,10 +155,10 @@
     <value>關閉 (Esc)</value>
   </data>
   <data name="ToggleViewTooltip" xml:space="preserve">
-    <value>縮圖檢視</value>
+    <value>縮圖檢視 (Ctrl+3)</value>
   </data>
   <data name="ListViewTooltip" xml:space="preserve">
-    <value>清單檢視</value>
+    <value>清單檢視 (Ctrl+3)</value>
   </data>
   <data name="RightClickSettingsHint" xml:space="preserve">
     <value>按右鍵開啟設定</value>

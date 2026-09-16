@@ -261,12 +261,6 @@ namespace Uviewer.Services
             }
         }
 
-        public void ToggleViewMode()
-        {
-            _explorerController.ToggleViewMode();
-            UpdateExplorerView();
-        }
-
         public void SetViewMode(bool isGrid)
         {
             if (_host.IsExplorerGrid == isGrid)
@@ -276,6 +270,13 @@ namespace Uviewer.Services
 
             _explorerController.SetViewMode(isGrid);
             UpdateExplorerView();
+        }
+
+        public void SetToggleViewButtonEnabled(bool isEnabled)
+        {
+            var button = _host.ToggleViewButton;
+            button.IsEnabled = isEnabled;
+            button.Opacity = isEnabled ? 1.0 : 0.4;
         }
 
         private void UpdateExplorerView()

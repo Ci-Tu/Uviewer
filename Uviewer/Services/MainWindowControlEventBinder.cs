@@ -41,6 +41,7 @@ namespace Uviewer.Services
         public EpubReaderController EpubReaderController { get; init; } = null!;
         public FileOpenController FileOpenController { get; init; } = null!;
         public ExplorerSidebarController ExplorerSidebarController { get; init; } = null!;
+        public Action ToggleSidebarWidth { get; init; } = null!;
         public BookmarkInteractionController BookmarkInteractionController { get; init; } = null!;
         public EventHandler<object> WebDavFlyoutOpened { get; init; } = null!;
         public RoutedEventHandler AddWebDavButtonClicked { get; init; } = null!;
@@ -152,7 +153,7 @@ namespace Uviewer.Services
             var explorer = _handlers.ExplorerSidebarController;
             var bookmarks = _handlers.BookmarkInteractionController;
 
-            _sidebar.ToggleViewButton.Click += (_, _) => explorer.ToggleViewMode();
+            _sidebar.ToggleViewButton.Click += (_, _) => _handlers.ToggleSidebarWidth();
             _sidebar.ThumbnailSizeSlider.ValueChanged += (_, e) => explorer.HandleThumbnailSizeChanged(e.NewValue);
             _sidebar.FolderThumbnailsCheckBox.Checked += (_, _) =>
                 explorer.HandleFolderThumbnailsChanged(_sidebar.FolderThumbnailsCheckBox.IsChecked == true);

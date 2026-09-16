@@ -32,6 +32,7 @@ namespace Uviewer.Services
         private readonly Action _saveWindowSettings;
         private readonly Action _invalidateThemeTargets;
         private readonly Action<bool> _setExplorerGridView;
+        private readonly Action<bool> _setSidebarWidthToggleEnabled;
         private Point? _lastCursorPosition;
         private long _cursorLastMovedAt;
         private bool _cursorHidden;
@@ -58,7 +59,8 @@ namespace Uviewer.Services
             FullscreenOverlayManager overlayManager,
             Action saveWindowSettings,
             Action invalidateThemeTargets,
-            Action<bool> setExplorerGridView)
+            Action<bool> setExplorerGridView,
+            Action<bool> setSidebarWidthToggleEnabled)
         {
             _window = window;
             _rootGrid = rootGrid;
@@ -75,6 +77,7 @@ namespace Uviewer.Services
             _saveWindowSettings = saveWindowSettings;
             _invalidateThemeTargets = invalidateThemeTargets;
             _setExplorerGridView = setExplorerGridView;
+            _setSidebarWidthToggleEnabled = setSidebarWidthToggleEnabled;
             _windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(window);
             _subclassProc = WindowSubclassProc;
             _hiddenInputCursor = TransparentInputCursorFactory.TryCreate();
@@ -158,6 +161,8 @@ namespace Uviewer.Services
                 if (_splitterGrid != null) _splitterGrid.Visibility = Visibility.Collapsed;
                 _sidebarColumn.Width = new GridLength(0);
             }
+
+            UpdateSidebarWidthToggleEnabled();
         }
 
         internal void HideToolbarUI()
@@ -215,10 +220,16 @@ namespace Uviewer.Services
             _windowState.IsFullscreen ||
             _window.AppWindow?.Presenter?.Kind == AppWindowPresenterKind.FullScreen;
 
+        // Ctrl+3 and the sidebar view button are only available in a pinned, non-fullscreen window.
+        private bool IsSidebarWidthToggleAvailable => !IsFullscreenActive && _windowState.IsPinned;
+
+        private void UpdateSidebarWidthToggleEnabled() =>
+            _setSidebarWidthToggleEnabled(IsSidebarWidthToggleAvailable);
+
         internal void ToggleSidebarWidth()
         {
             // Ignored in fullscreen and while the UI auto-hide (unpinned) mode is active.
-            if (IsFullscreenActive || !_windowState.IsPinned)
+            if (!IsSidebarWidthToggleAvailable)
             {
                 return;
             }
@@ -316,6 +327,8 @@ namespace Uviewer.Services
             {
                 StopCursorActivityTracking();
             }
+
+            UpdateSidebarWidthToggleEnabled();
         }
 
         internal void RefreshPointerCursor()
@@ -703,6 +716,7 @@ namespace Uviewer.Services
                 _sidebarColumn.Width = new GridLength(0);
             }
 
+            UpdateSidebarWidthToggleEnabled();
             _saveWindowSettings();
         }
 
