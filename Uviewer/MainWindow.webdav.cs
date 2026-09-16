@@ -187,6 +187,7 @@ namespace Uviewer
             if (!_webDavService.IsConnected || _webDavService.CurrentServer == null)
                 return;
 
+            _explorerController.CancelFilterSearch();
             var token = _webDavState.RestartOperation();
 
             try
@@ -222,6 +223,7 @@ namespace Uviewer
                 var explorerItems = WebDavExplorerItemFactory.CreateFolderItems(remotePath, items, _explorerSortMode);
                 _explorerState.ReplaceItems(explorerItems);
                 _explorerSidebarController.ApplyThumbnailSizeToFileItems();
+                _explorerController.RefreshFilterSearch();
             }
             catch (OperationCanceledException) { }
             catch (Exception ex)
@@ -306,6 +308,7 @@ namespace Uviewer
         {
             _webDavService.Disconnect();
             _isWebDavMode = false;
+            _explorerController.CancelFilterSearch();
             _currentWebDavPath = null;
         }
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Uviewer.Models;
 
@@ -165,6 +166,156 @@ namespace Uviewer.Services
 
                 return items;
             });
+        }
+        #endregion
+        #region Recursive Filter Search
+
+        /// <summary>하위 폴더 검색 결과의 최대 개수 (과도한 탐색과 표시를 방지)</summary>
+        private const int MaxDescendantResultCount = 1000;
+
+        /// <summary>
+        /// 현재 폴더의 하위 폴더를 재귀적으로 탐색해 필터와 이름이 일치하는 항목을 반환합니다.
+        /// 숨김 폴더(".", 시작)와 재분석 지점(심볼릭 링크)은 건너뛰고, 접근할 수 없는 폴더는 무시합니다.
+        /// </summary>
+        public static Task<List<FileItem>> GetDescendantContentsAsync(
+            string rootPath,
+            string filterText,
+            ExplorerFilterKind kind,
+            ExplorerSortMode sortMode,
+            CancellationToken token)
+        {
+            return Task.Run(() =>
+            {
+                var items = new List<FileItem>();
+                if (string.IsNullOrWhiteSpace(rootPath) || !Directory.Exists(rootPath)) return items;
+
+                var pending = new Stack<string>();
+                pending.Push(rootPath);
+
+                while (pending.Count > 0 && items.Count < MaxDescendantResultCount)
+                {
+                    token.ThrowIfCancellationRequested();
+
+                    var current = pending.Pop();
+                    string[] dirs;
+                    string[] files;
+                    try
+                    {
+                        dirs = Directory.GetDirectories(current);
+                        files = Directory.GetFiles(current);
+                    }
+                    catch (UnauthorizedAccessException) { continue; }
+                    catch (IOException) { continue; }
+
+                    foreach (var filePath in files)
+                    {
+                        token.ThrowIfCancellationRequested();
+                        if (items.Count >= MaxDescendantResultCount) break;
+
+                        var fileName = Path.GetFileName(filePath);
+                        if (fileName.StartsWith(".")) continue;
+
+                        var fileKind = GetSupportedFileKind(Path.GetExtension(filePath));
+                        if (fileKind == SupportedFileKind.Unsupported) continue;
+
+                        var fileItem = new FileItem { Name = fileName, FullPath = filePath, IsDirectory = false };
+                        ApplyFileKind(fileItem, fileKind);
+                        if (!MatchesFilter(fileItem, filterText, kind)) continue;
+
+                        fileItem.Name = GetRelativeDisplayName(rootPath, filePath);
+                        items.Add(fileItem);
+                    }
+
+                    foreach (var dirPath in dirs)
+                    {
+                        token.ThrowIfCancellationRequested();
+                        if (items.Count >= MaxDescendantResultCount) break;
+
+                        var dirName = Path.GetFileName(dirPath);
+                        if (dirName.StartsWith(".") || IsReparsePoint(dirPath)) continue;
+
+                        var dirItem = new FileItem { Name = dirName, FullPath = dirPath, IsDirectory = true };
+                        if (MatchesFilter(dirItem, filterText, kind))
+                        {
+                            dirItem.Name = GetRelativeDisplayName(rootPath, dirPath);
+                            items.Add(dirItem);
+                        }
+
+                        pending.Push(dirPath);
+                    }
+                }
+
+                IEnumerable<FileItem> sorted = sortMode switch
+                {
+                    ExplorerSortMode.DateDesc => items.OrderByDescending(GetLastWriteTimeSafe),
+                    ExplorerSortMode.DateAsc => items.OrderBy(GetLastWriteTimeSafe),
+                    _ => items.OrderBy(i => i.Name, NaturalSortComparer.Default)
+                };
+                return sorted.ToList();
+            }, token);
+        }
+
+        /// <summary>
+        /// 항목이 필터(이름 일치 + 종류 일치)를 통과하는지 판단합니다.
+        /// 폴더는 파일 종류 필터와 무관하게 계속 탐색할 수 있도록 남겨 둡니다.
+        /// </summary>
+        public static bool MatchesFilter(FileItem item, string filterText, ExplorerFilterKind kind)
+        {
+            if (item == null) return false;
+            if (item.IsParentDirectory) return true;
+            if (!item.Name.Contains(filterText, StringComparison.OrdinalIgnoreCase)) return false;
+
+            // Keep matching folders available for navigation with any file-type filter.
+            if (item.IsDirectory) return true;
+            return kind switch
+            {
+                ExplorerFilterKind.All => true,
+                ExplorerFilterKind.Image => item.IsImage,
+                ExplorerFilterKind.Text => item.IsText,
+                ExplorerFilterKind.Pdf => item.IsPdf,
+                ExplorerFilterKind.Epub => item.IsEpub,
+                ExplorerFilterKind.Archive => item.IsArchive,
+                _ => false
+            };
+        }
+
+        private static string GetRelativeDisplayName(string rootPath, string path)
+        {
+            try
+            {
+                var relative = Path.GetRelativePath(rootPath, path);
+                return relative.StartsWith("..", StringComparison.Ordinal) ? Path.GetFileName(path) : relative;
+            }
+            catch
+            {
+                return Path.GetFileName(path);
+            }
+        }
+
+        private static bool IsReparsePoint(string path)
+        {
+            try
+            {
+                return (File.GetAttributes(path) & FileAttributes.ReparsePoint) == FileAttributes.ReparsePoint;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        private static DateTime GetLastWriteTimeSafe(FileItem item)
+        {
+            try
+            {
+                return item.IsDirectory
+                    ? Directory.GetLastWriteTime(item.FullPath)
+                    : File.GetLastWriteTime(item.FullPath);
+            }
+            catch
+            {
+                return DateTime.MinValue;
+            }
         }
         #endregion
 

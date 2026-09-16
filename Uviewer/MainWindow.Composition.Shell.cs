@@ -80,6 +80,12 @@ namespace Uviewer
                 public static void InitializeExplorerAndBookmarks(MainWindow window)
                 {
                     window._explorerController = new ExplorerController(window._explorerState, window._thumbnailService, window.DispatcherQueue);
+                    // WebDAV 모드에서는 원격 폴더를 하위까지 병렬 검색합니다.
+                    window._explorerController.RemoteSearchSource = new WebDavFilterSearchSource(
+                        window._webDavService,
+                        window._explorerState,
+                        () => window._isWebDavMode,
+                        () => window._currentWebDavPath);
                     window._bookmarkPanelController = new BookmarkPanelController(window._bookmarkPanelState, window._favoritesService, window._recentService);
                     window._favoritesController = new FavoritesController(window._favoritesService, window._bookmarkPanelController);
                     window._recentController = new RecentController(window._recentService, window._bookmarkPanelController);
