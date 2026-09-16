@@ -57,6 +57,11 @@ namespace Uviewer.Services
             _state.IsGridView = !_state.IsGridView;
         }
 
+        public void SetViewMode(bool isGrid)
+        {
+            _state.IsGridView = isGrid;
+        }
+
         private async Task LoadFolderCoreAsync(
             string path,
             Action<Exception> onLoadError,

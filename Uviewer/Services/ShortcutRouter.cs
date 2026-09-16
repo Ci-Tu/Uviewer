@@ -139,6 +139,14 @@ namespace Uviewer.Services
                     }
                     break;
 
+                case VirtualKey.Number3:
+                case VirtualKey.NumberPad3:
+                    if (input.CtrlPressed)
+                    {
+                        return Set(out route, AppCommand.ToggleSidebarWidth);
+                    }
+                    break;
+
                 case VirtualKey.T when !input.CtrlPressed:
                     return Set(out route, AppCommand.ToggleAlwaysOnTop);
 

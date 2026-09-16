@@ -267,6 +267,17 @@ namespace Uviewer.Services
             UpdateExplorerView();
         }
 
+        public void SetViewMode(bool isGrid)
+        {
+            if (_host.IsExplorerGrid == isGrid)
+            {
+                return;
+            }
+
+            _explorerController.SetViewMode(isGrid);
+            UpdateExplorerView();
+        }
+
         private void UpdateExplorerView()
         {
             if (_host.IsExplorerGrid)

@@ -59,6 +59,10 @@ namespace Uviewer.Services
                     actions.ToggleSidebar();
                     return;
 
+                case AppCommand.ToggleSidebarWidth:
+                    actions.ToggleSidebarWidth();
+                    return;
+
                 case AppCommand.ToggleTheme:
                     actions.ToggleTheme();
                     return;

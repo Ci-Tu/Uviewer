@@ -15,6 +15,7 @@ namespace Uviewer.Services
         DecreaseTextSize,
         IncreaseTextSize,
         ToggleSidebar,
+        ToggleSidebarWidth,
         ToggleTheme,
         LoadEpubChapter,
         ToggleSideBySide,

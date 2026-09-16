@@ -33,6 +33,7 @@ namespace Uviewer.Services
         void DecreaseTextSize();
         void IncreaseTextSize();
         void ToggleSidebar();
+        void ToggleSidebarWidth();
         void ToggleTheme();
         Task LoadEpubChapterAsync(int index);
         void ToggleSideBySide();

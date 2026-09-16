@@ -10,12 +10,14 @@ namespace Uviewer.Services
         private readonly Window _window;
         private readonly AppWindow _appWindow;
 
+        public const int DefaultSidebarWidth = 320;
+
         // 창 상태 프로퍼티
         public bool IsFullscreen { get; set; }
         public bool IsPinned { get; set; } = true;
         public bool IsAlwaysOnTop { get; set; }
         public bool IsSidebarVisible { get; set; } = true;
-        public int SidebarWidth { get; set; } = 320;
+        public int SidebarWidth { get; set; } = DefaultSidebarWidth;
         public bool WasMaximizedBeforeFullscreen { get; set; }
         public RectInt32 LastNonMaximizedRect { get; set; } = new(100, 100, 1200, 800);
 

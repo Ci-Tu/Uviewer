@@ -31,11 +31,13 @@ namespace Uviewer.Services
         private readonly InputCursor? _hiddenInputCursor;
         private readonly Action _saveWindowSettings;
         private readonly Action _invalidateThemeTargets;
+        private readonly Action<bool> _setExplorerGridView;
         private Point? _lastCursorPosition;
         private long _cursorLastMovedAt;
         private bool _cursorHidden;
         private int _cursorHidingSuspendCount;
         private bool _windowSubclassInstalled;
+        private bool _isSidebarWidthExpanded;
         private bool _disposed;
         private const int IdcArrow = 32512;
         private const uint WmSetCursor = 0x0020;
@@ -55,7 +57,8 @@ namespace Uviewer.Services
             WindowStateManager windowState,
             FullscreenOverlayManager overlayManager,
             Action saveWindowSettings,
-            Action invalidateThemeTargets)
+            Action invalidateThemeTargets,
+            Action<bool> setExplorerGridView)
         {
             _window = window;
             _rootGrid = rootGrid;
@@ -71,6 +74,7 @@ namespace Uviewer.Services
             _overlayManager = overlayManager;
             _saveWindowSettings = saveWindowSettings;
             _invalidateThemeTargets = invalidateThemeTargets;
+            _setExplorerGridView = setExplorerGridView;
             _windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(window);
             _subclassProc = WindowSubclassProc;
             _hiddenInputCursor = TransparentInputCursorFactory.TryCreate();
@@ -202,6 +206,38 @@ namespace Uviewer.Services
             _sidebarColumn.Width = _windowState.IsSidebarVisible
                 ? new GridLength(_windowState.SidebarWidth)
                 : new GridLength(0);
+            _saveWindowSettings();
+        }
+
+        // The presenter kind is the source of truth; the managed flag can lag briefly
+        // while a fullscreen transition is in flight.
+        private bool IsFullscreenActive =>
+            _windowState.IsFullscreen ||
+            _window.AppWindow?.Presenter?.Kind == AppWindowPresenterKind.FullScreen;
+
+        internal void ToggleSidebarWidth()
+        {
+            // Ignored in fullscreen and while the UI auto-hide (unpinned) mode is active.
+            if (IsFullscreenActive || !_windowState.IsPinned)
+            {
+                return;
+            }
+
+            int baseWidth = WindowStateManager.DefaultSidebarWidth;
+            _isSidebarWidthExpanded = !_isSidebarWidthExpanded;
+            _windowState.SidebarWidth = _isSidebarWidthExpanded ? (int)(baseWidth * 2.5) : baseWidth;
+            _setExplorerGridView(_isSidebarWidthExpanded);
+
+            if (!_windowState.IsSidebarVisible)
+            {
+                _windowState.IsSidebarVisible = true;
+                _toolbar.SetSidebarState(true);
+                _sidebarGrid.Visibility = Visibility.Visible;
+                if (_splitterGrid != null) _splitterGrid.Visibility = Visibility.Visible;
+            }
+
+            _sidebarColumn.Width = new GridLength(_windowState.SidebarWidth);
+
             _saveWindowSettings();
         }
 

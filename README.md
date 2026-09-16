@@ -111,6 +111,7 @@
 | **T** | Global | Toggle Always on Top |
 | **Ctrl + O** | Global | Open File |
 | **Ctrl + B** | Global | Toggle Sidebar |
+| **Ctrl + 3** | Global | Toggle Sidebar Width (Default / 2.5x) + Thumbnail Mode (disabled in Fullscreen / while UI Auto-Hide is on) |
 | **Ctrl + S** | Global | Add to Favorites |
 | **Ctrl + F** | Text / EPUB / PDF | Open Search |
 | **+ / -**  | Global | Zoom In/Out / Font Size Up/Down (-/= also works) |

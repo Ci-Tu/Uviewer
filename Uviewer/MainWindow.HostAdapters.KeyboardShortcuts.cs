@@ -191,6 +191,7 @@ namespace Uviewer
             public void DecreaseTextSize() => _window._documentReaderController.DecreaseTextSize();
             public void IncreaseTextSize() => _window._documentReaderController.IncreaseTextSize();
             public void ToggleSidebar() => _window._windowShellController.ToggleSidebar();
+            public void ToggleSidebarWidth() => _window._windowShellController.ToggleSidebarWidth();
             public void ToggleTheme() => _window._documentReaderController.ToggleTheme();
             public Task LoadEpubChapterAsync(int index) => _window._epubReaderController.LoadEpubChapterAsync(index);
             public void ToggleSideBySide() => _window._imageViewerController.ToggleSideBySide();
