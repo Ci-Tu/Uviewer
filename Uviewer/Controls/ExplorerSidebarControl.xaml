@@ -70,9 +70,9 @@
                                     <Slider x:Name="SidebarDefaultWidthSlider" Minimum="200" Maximum="600" StepFrequency="10" Value="340"/>
                                     <Grid>
                                         <TextBlock x:Name="SidebarExpandedWidthLabel" Text="{x:Bind app:Strings.SidebarExpandedWidthLabel}" FontSize="12" HorizontalAlignment="Left"/>
-                                        <TextBlock x:Name="SidebarExpandedWidthValueText" Text="800" FontSize="12" HorizontalAlignment="Right"/>
+                                        <TextBlock x:Name="SidebarExpandedWidthValueText" Text="760" FontSize="12" HorizontalAlignment="Right"/>
                                     </Grid>
-                                    <Slider x:Name="SidebarExpandedWidthSlider" Minimum="400" Maximum="1200" StepFrequency="20" Value="800"/>
+                                    <Slider x:Name="SidebarExpandedWidthSlider" Minimum="400" Maximum="1200" StepFrequency="10" Value="760"/>
                                 </StackPanel>
                             </Flyout>
                         </Button.ContextFlyout>

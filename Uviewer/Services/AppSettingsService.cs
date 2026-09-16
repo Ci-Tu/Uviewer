@@ -301,7 +301,7 @@ namespace Uviewer.Services
                 return fallback;
             }
 
-            return Math.Clamp(value, WindowStateManager.MinSidebarWidth, WindowStateManager.MaxSidebarWidth);
+            return WindowStateManager.SnapSidebarWidth(value);
         }
 
         private static bool TryParseDouble(string value, out double result)

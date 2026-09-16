@@ -260,7 +260,7 @@ namespace Uviewer.Services
 
         internal void SetSidebarDefaultWidth(int width)
         {
-            _windowState.SidebarDefaultWidth = Math.Clamp(width, WindowStateManager.MinSidebarWidth, WindowStateManager.MaxSidebarWidth);
+            _windowState.SidebarDefaultWidth = WindowStateManager.SnapSidebarWidth(width);
             if (!_isSidebarWidthExpanded)
             {
                 ApplySidebarWidth(_windowState.SidebarDefaultWidth);
@@ -269,7 +269,7 @@ namespace Uviewer.Services
 
         internal void SetSidebarExpandedWidth(int width)
         {
-            _windowState.SidebarExpandedWidth = Math.Clamp(width, WindowStateManager.MinSidebarWidth, WindowStateManager.MaxSidebarWidth);
+            _windowState.SidebarExpandedWidth = WindowStateManager.SnapSidebarWidth(width);
             if (_isSidebarWidthExpanded)
             {
                 ApplySidebarWidth(_windowState.SidebarExpandedWidth);

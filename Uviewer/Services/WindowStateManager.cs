@@ -11,9 +11,10 @@ namespace Uviewer.Services
         private readonly AppWindow _appWindow;
 
         public const int DefaultSidebarWidth = 340;
-        public const int DefaultExpandedSidebarWidth = 800;
+        public const int DefaultExpandedSidebarWidth = 760;
         public const int MinSidebarWidth = 200;
         public const int MaxSidebarWidth = 1600;
+        public const int SidebarWidthStep = 10;
 
         // 창 상태 프로퍼티
         public bool IsFullscreen { get; set; }
@@ -30,6 +31,13 @@ namespace Uviewer.Services
         {
             _window = window;
             _appWindow = window.AppWindow;
+        }
+
+        // Clamps and snaps a sidebar width onto the slider step grid.
+        public static int SnapSidebarWidth(double width)
+        {
+            int snapped = (int)Math.Round(width / SidebarWidthStep, MidpointRounding.AwayFromZero) * SidebarWidthStep;
+            return Math.Clamp(snapped, MinSidebarWidth, MaxSidebarWidth);
         }
 
         // 전체화면 토글 로직
