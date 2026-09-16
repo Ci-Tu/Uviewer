@@ -389,6 +389,8 @@ namespace Uviewer
 
             if (ThumbnailSettingsTitleText != null) ThumbnailSettingsTitleText.Text = Strings.ThumbnailSettingsTitle;
             if (ThumbnailSizeLabel != null) ThumbnailSizeLabel.Text = Strings.ThumbnailSizeLabel;
+            if (SidebarDefaultWidthLabel != null) SidebarDefaultWidthLabel.Text = Strings.SidebarDefaultWidthLabel;
+            if (SidebarExpandedWidthLabel != null) SidebarExpandedWidthLabel.Text = Strings.SidebarExpandedWidthLabel;
             if (FolderThumbnailsCheckBox != null) FolderThumbnailsCheckBox.Content = Strings.ShowFolderThumbnailsLabel;
             _explorerSidebarController.ApplyThumbnailSettingsToControls();
 

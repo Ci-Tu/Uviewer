@@ -124,6 +124,8 @@ namespace Uviewer
                             ExplorerSidebar = window.ExplorerSidebar,
                             ToggleViewButton = window.ToggleViewButton,
                             ThumbnailSizeSlider = window.ThumbnailSizeSlider,
+                            SidebarDefaultWidthSlider = window.SidebarDefaultWidthSlider,
+                            SidebarExpandedWidthSlider = window.SidebarExpandedWidthSlider,
                             FolderThumbnailsCheckBox = window.FolderThumbnailsCheckBox,
                             ParentFolderButton = window.ParentFolderButton,
                             CurrentPathBreadcrumb = window.CurrentPathBreadcrumb,

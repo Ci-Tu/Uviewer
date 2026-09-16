@@ -10,7 +10,10 @@ namespace Uviewer.Services
         private readonly Window _window;
         private readonly AppWindow _appWindow;
 
-        public const int DefaultSidebarWidth = 320;
+        public const int DefaultSidebarWidth = 340;
+        public const int DefaultExpandedSidebarWidth = 800;
+        public const int MinSidebarWidth = 200;
+        public const int MaxSidebarWidth = 1600;
 
         // 창 상태 프로퍼티
         public bool IsFullscreen { get; set; }
@@ -18,6 +21,8 @@ namespace Uviewer.Services
         public bool IsAlwaysOnTop { get; set; }
         public bool IsSidebarVisible { get; set; } = true;
         public int SidebarWidth { get; set; } = DefaultSidebarWidth;
+        public int SidebarDefaultWidth { get; set; } = DefaultSidebarWidth;
+        public int SidebarExpandedWidth { get; set; } = DefaultExpandedSidebarWidth;
         public bool WasMaximizedBeforeFullscreen { get; set; }
         public RectInt32 LastNonMaximizedRect { get; set; } = new(100, 100, 1200, 800);
 

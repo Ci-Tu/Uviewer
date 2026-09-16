@@ -49,6 +49,8 @@ namespace Uviewer.Services
             _host.IsRegistered = settings.IsRegistered;
             _host.ExplorerThumbnailSize = settings.ExplorerThumbnailSize;
             _host.ShowFolderThumbnails = settings.ShowFolderThumbnails;
+            windowState.SidebarDefaultWidth = (int)settings.SidebarDefaultWidth;
+            windowState.SidebarExpandedWidth = (int)settings.SidebarExpandedWidth;
             _host.ExternalProgramPath = settings.ExternalProgramPath;
             _host.ToolbarSettings = settings.Toolbar;
 
@@ -98,6 +100,8 @@ namespace Uviewer.Services
                 IsRegistered = _host.IsRegistered,
                 ExplorerThumbnailSize = _host.ExplorerThumbnailSize,
                 ShowFolderThumbnails = _host.ShowFolderThumbnails,
+                SidebarDefaultWidth = windowState.SidebarDefaultWidth,
+                SidebarExpandedWidth = windowState.SidebarExpandedWidth,
                 ExternalProgramPath = _host.ExternalProgramPath,
                 Toolbar = _host.ToolbarSettings,
                 UpscaleFactor = _host.ImageOptions.UpscaleFactor,

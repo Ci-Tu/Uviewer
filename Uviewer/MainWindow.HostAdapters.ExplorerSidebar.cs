@@ -41,6 +41,18 @@ namespace Uviewer
                 set => _window._showFolderThumbnails = value;
             }
 
+            public double SidebarDefaultWidth
+            {
+                get => _window._windowState.SidebarDefaultWidth;
+                set => _window._windowShellController.SetSidebarDefaultWidth((int)value);
+            }
+
+            public double SidebarExpandedWidth
+            {
+                get => _window._windowState.SidebarExpandedWidth;
+                set => _window._windowShellController.SetSidebarExpandedWidth((int)value);
+            }
+
             public FileItem? ExplorerContextItem
             {
                 get => _window._explorerContextItem;
@@ -55,6 +67,10 @@ namespace Uviewer
             public Slider ThumbnailSizeSlider => _window.ThumbnailSizeSlider;
             public TextBlock ThumbnailSizeValueText => _window.ThumbnailSizeValueText;
             public CheckBox FolderThumbnailsCheckBox => _window.FolderThumbnailsCheckBox;
+            public Slider SidebarDefaultWidthSlider => _window.SidebarDefaultWidthSlider;
+            public TextBlock SidebarDefaultWidthValueText => _window.SidebarDefaultWidthValueText;
+            public Slider SidebarExpandedWidthSlider => _window.SidebarExpandedWidthSlider;
+            public TextBlock SidebarExpandedWidthValueText => _window.SidebarExpandedWidthValueText;
             public PathBreadcrumbControl CurrentPathBreadcrumb => _window.CurrentPathBreadcrumb;
             public TextBox ExplorerFilterTextBox => _window.ExplorerFilterTextBox;
             public ComboBox ExplorerFilterKindComboBox => _window.ExplorerFilterKindComboBox;

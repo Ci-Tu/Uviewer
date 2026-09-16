@@ -47,6 +47,12 @@ namespace Uviewer
         private TextBlock ThumbnailSizeValueText => SidebarPart<TextBlock>(nameof(ThumbnailSizeValueText));
         private Slider ThumbnailSizeSlider => SidebarPart<Slider>(nameof(ThumbnailSizeSlider));
         private CheckBox FolderThumbnailsCheckBox => SidebarPart<CheckBox>(nameof(FolderThumbnailsCheckBox));
+        private TextBlock SidebarDefaultWidthLabel => SidebarPart<TextBlock>(nameof(SidebarDefaultWidthLabel));
+        private TextBlock SidebarDefaultWidthValueText => SidebarPart<TextBlock>(nameof(SidebarDefaultWidthValueText));
+        private Slider SidebarDefaultWidthSlider => SidebarPart<Slider>(nameof(SidebarDefaultWidthSlider));
+        private TextBlock SidebarExpandedWidthLabel => SidebarPart<TextBlock>(nameof(SidebarExpandedWidthLabel));
+        private TextBlock SidebarExpandedWidthValueText => SidebarPart<TextBlock>(nameof(SidebarExpandedWidthValueText));
+        private Slider SidebarExpandedWidthSlider => SidebarPart<Slider>(nameof(SidebarExpandedWidthSlider));
         private Button ParentFolderButton => SidebarPart<Button>(nameof(ParentFolderButton));
         private Button SidebarFavoritesButton => SidebarPart<Button>(nameof(SidebarFavoritesButton));
         private Flyout SidebarFavoritesFlyout => SidebarPart<Flyout>(nameof(SidebarFavoritesFlyout));

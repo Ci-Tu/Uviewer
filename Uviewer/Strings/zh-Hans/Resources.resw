@@ -172,6 +172,12 @@
   <data name="ShowFolderThumbnailsLabel" xml:space="preserve">
     <value>显示文件夹缩略图</value>
   </data>
+  <data name="SidebarDefaultWidthLabel" xml:space="preserve">
+    <value>侧边栏默认宽度:</value>
+  </data>
+  <data name="SidebarExpandedWidthLabel" xml:space="preserve">
+    <value>侧边栏展开宽度:</value>
+  </data>
   <data name="ParentFolderTooltip" xml:space="preserve">
     <value>返回上一级 (Backspace)</value>
   </data>

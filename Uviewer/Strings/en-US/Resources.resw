@@ -172,6 +172,12 @@
   <data name="ShowFolderThumbnailsLabel" xml:space="preserve">
     <value>Show folder thumbnails</value>
   </data>
+  <data name="SidebarDefaultWidthLabel" xml:space="preserve">
+    <value>Sidebar default width:</value>
+  </data>
+  <data name="SidebarExpandedWidthLabel" xml:space="preserve">
+    <value>Sidebar expanded width:</value>
+  </data>
   <data name="ParentFolderTooltip" xml:space="preserve">
     <value>Up Level (Backspace)</value>
   </data>

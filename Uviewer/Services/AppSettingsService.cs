@@ -158,6 +158,8 @@ namespace Uviewer.Services
         {
             settings.LastNonMaximizedRect = NormalizeWindowRect(settings.LastNonMaximizedRect);
             settings.ExplorerThumbnailSize = Math.Clamp(settings.ExplorerThumbnailSize, 64, 180);
+            settings.SidebarDefaultWidth = NormalizeSidebarWidth(settings.SidebarDefaultWidth, WindowStateManager.DefaultSidebarWidth);
+            settings.SidebarExpandedWidth = NormalizeSidebarWidth(settings.SidebarExpandedWidth, WindowStateManager.DefaultExpandedSidebarWidth);
 
             if (!Enum.IsDefined(typeof(ElementTheme), settings.Theme))
             {
@@ -229,7 +231,9 @@ namespace Uviewer.Services
                     ThumbnailSize = settings.ExplorerThumbnailSize,
                     ShowFolderThumbnails = settings.ShowFolderThumbnails,
                     SidebarVisible = settings.IsSidebarVisible,
-                    Pinned = settings.IsPinned
+                    Pinned = settings.IsPinned,
+                    SidebarDefaultWidth = settings.SidebarDefaultWidth,
+                    SidebarExpandedWidth = settings.SidebarExpandedWidth
                 },
                 App = new AppBehaviorSettings
                 {
@@ -283,9 +287,21 @@ namespace Uviewer.Services
                 UnsharpRadius = imageProcessing.UnsharpRadius,
                 ExplorerThumbnailSize = explorer.ThumbnailSize,
                 ShowFolderThumbnails = explorer.ShowFolderThumbnails,
+                SidebarDefaultWidth = explorer.SidebarDefaultWidth,
+                SidebarExpandedWidth = explorer.SidebarExpandedWidth,
                 ExternalProgramPath = document.ExternalProgramPath ?? defaults.ExternalProgramPath,
                 Toolbar = document.Toolbar?.Clone() ?? AppToolbarSettings.CreateDefault()
             };
+        }
+
+        private static double NormalizeSidebarWidth(double value, int fallback)
+        {
+            if (double.IsNaN(value) || value <= 0)
+            {
+                return fallback;
+            }
+
+            return Math.Clamp(value, WindowStateManager.MinSidebarWidth, WindowStateManager.MaxSidebarWidth);
         }
 
         private static bool TryParseDouble(string value, out double result)

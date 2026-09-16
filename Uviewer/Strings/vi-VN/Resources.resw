@@ -172,6 +172,12 @@
   <data name="ShowFolderThumbnailsLabel" xml:space="preserve">
     <value>Hiển thị hình thu nhỏ cho thư mục</value>
   </data>
+  <data name="SidebarDefaultWidthLabel" xml:space="preserve">
+    <value>Chiều rộng mặc định:</value>
+  </data>
+  <data name="SidebarExpandedWidthLabel" xml:space="preserve">
+    <value>Chiều rộng mở rộng:</value>
+  </data>
   <data name="ParentFolderTooltip" xml:space="preserve">
     <value>Lên một cấp (Backspace)</value>
   </data>

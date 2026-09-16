@@ -172,6 +172,12 @@
   <data name="ShowFolderThumbnailsLabel" xml:space="preserve">
     <value>폴더 썸네일 표시</value>
   </data>
+  <data name="SidebarDefaultWidthLabel" xml:space="preserve">
+    <value>사이드바 기본 너비:</value>
+  </data>
+  <data name="SidebarExpandedWidthLabel" xml:space="preserve">
+    <value>사이드바 확장 너비:</value>
+  </data>
   <data name="ParentFolderTooltip" xml:space="preserve">
     <value>상위 폴더로 가기(Backspace)</value>
   </data>

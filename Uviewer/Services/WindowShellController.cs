@@ -162,6 +162,11 @@ namespace Uviewer.Services
                 _sidebarColumn.Width = new GridLength(0);
             }
 
+            if (_windowState.IsPinned && _windowState.IsSidebarVisible)
+            {
+                _sidebarColumn.Width = new GridLength(_windowState.SidebarDefaultWidth);
+            }
+
             UpdateSidebarWidthToggleEnabled();
         }
 
@@ -192,7 +197,7 @@ namespace Uviewer.Services
             {
                 _windowState.SidebarWidth = (int)_sidebarColumn.Width.Value > 200
                     ? (int)_sidebarColumn.Width.Value
-                    : 320;
+                    : _windowState.SidebarDefaultWidth;
             }
 
             if ((int)_sidebarColumn.Width.Value > 200)
@@ -234,9 +239,10 @@ namespace Uviewer.Services
                 return;
             }
 
-            int baseWidth = WindowStateManager.DefaultSidebarWidth;
             _isSidebarWidthExpanded = !_isSidebarWidthExpanded;
-            _windowState.SidebarWidth = _isSidebarWidthExpanded ? (int)(baseWidth * 2.5) : baseWidth;
+            _windowState.SidebarWidth = _isSidebarWidthExpanded
+                ? _windowState.SidebarExpandedWidth
+                : _windowState.SidebarDefaultWidth;
             _setExplorerGridView(_isSidebarWidthExpanded);
 
             if (!_windowState.IsSidebarVisible)
@@ -250,6 +256,33 @@ namespace Uviewer.Services
             _sidebarColumn.Width = new GridLength(_windowState.SidebarWidth);
 
             _saveWindowSettings();
+        }
+
+        internal void SetSidebarDefaultWidth(int width)
+        {
+            _windowState.SidebarDefaultWidth = Math.Clamp(width, WindowStateManager.MinSidebarWidth, WindowStateManager.MaxSidebarWidth);
+            if (!_isSidebarWidthExpanded)
+            {
+                ApplySidebarWidth(_windowState.SidebarDefaultWidth);
+            }
+        }
+
+        internal void SetSidebarExpandedWidth(int width)
+        {
+            _windowState.SidebarExpandedWidth = Math.Clamp(width, WindowStateManager.MinSidebarWidth, WindowStateManager.MaxSidebarWidth);
+            if (_isSidebarWidthExpanded)
+            {
+                ApplySidebarWidth(_windowState.SidebarExpandedWidth);
+            }
+        }
+
+        private void ApplySidebarWidth(int width)
+        {
+            _windowState.SidebarWidth = width;
+            if (_windowState.IsPinned && !IsFullscreenActive)
+            {
+                _sidebarColumn.Width = new GridLength(width);
+            }
         }
 
         internal void CaptureSidebarResize()

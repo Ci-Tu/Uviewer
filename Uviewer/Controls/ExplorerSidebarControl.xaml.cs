@@ -85,6 +85,12 @@ namespace Uviewer.Controls
             ThumbnailSizeValueText.FontFamily = fontFamily;
             ThumbnailSizeSlider.FontFamily = fontFamily;
             FolderThumbnailsCheckBox.FontFamily = fontFamily;
+            SidebarDefaultWidthLabel.FontFamily = fontFamily;
+            SidebarDefaultWidthValueText.FontFamily = fontFamily;
+            SidebarDefaultWidthSlider.FontFamily = fontFamily;
+            SidebarExpandedWidthLabel.FontFamily = fontFamily;
+            SidebarExpandedWidthValueText.FontFamily = fontFamily;
+            SidebarExpandedWidthSlider.FontFamily = fontFamily;
             SidebarFileFavoritesHeaderText.FontFamily = fontFamily;
             SidebarFolderFavoritesHeaderText.FontFamily = fontFamily;
             ApplyContextMenuFont(FileListView.ContextFlyout, fontFamily);
@@ -246,6 +252,12 @@ namespace Uviewer.Controls
                 nameof(ThumbnailSizeValueText) => ThumbnailSizeValueText,
                 nameof(ThumbnailSizeSlider) => ThumbnailSizeSlider,
                 nameof(FolderThumbnailsCheckBox) => FolderThumbnailsCheckBox,
+                nameof(SidebarDefaultWidthLabel) => SidebarDefaultWidthLabel,
+                nameof(SidebarDefaultWidthValueText) => SidebarDefaultWidthValueText,
+                nameof(SidebarDefaultWidthSlider) => SidebarDefaultWidthSlider,
+                nameof(SidebarExpandedWidthLabel) => SidebarExpandedWidthLabel,
+                nameof(SidebarExpandedWidthValueText) => SidebarExpandedWidthValueText,
+                nameof(SidebarExpandedWidthSlider) => SidebarExpandedWidthSlider,
                 nameof(ParentFolderButton) => ParentFolderButton,
                 nameof(SidebarFavoritesButton) => SidebarFavoritesButton,
                 nameof(SidebarFavoritesFlyout) => SidebarFavoritesFlyout,

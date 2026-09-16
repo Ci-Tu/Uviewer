@@ -83,7 +83,7 @@
         <!-- Main Content Area -->
         <Grid Grid.Row="2" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition x:Name="SidebarColumn" Width="320"/>
+                <ColumnDefinition x:Name="SidebarColumn" Width="340"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>

@@ -17,6 +17,8 @@ namespace Uviewer.Services
         public Button ToggleViewButton { get; init; } = null!;
         public Slider ThumbnailSizeSlider { get; init; } = null!;
         public CheckBox FolderThumbnailsCheckBox { get; init; } = null!;
+        public Slider SidebarDefaultWidthSlider { get; init; } = null!;
+        public Slider SidebarExpandedWidthSlider { get; init; } = null!;
         public PathBreadcrumbControl CurrentPathBreadcrumb { get; init; } = null!;
         public TextBox ExplorerFilterTextBox { get; init; } = null!;
         public ComboBox ExplorerFilterKindComboBox { get; init; } = null!;
@@ -155,6 +157,8 @@ namespace Uviewer.Services
 
             _sidebar.ToggleViewButton.Click += (_, _) => _handlers.ToggleSidebarWidth();
             _sidebar.ThumbnailSizeSlider.ValueChanged += (_, e) => explorer.HandleThumbnailSizeChanged(e.NewValue);
+            _sidebar.SidebarDefaultWidthSlider.ValueChanged += (_, e) => explorer.HandleSidebarDefaultWidthChanged(e.NewValue);
+            _sidebar.SidebarExpandedWidthSlider.ValueChanged += (_, e) => explorer.HandleSidebarExpandedWidthChanged(e.NewValue);
             _sidebar.FolderThumbnailsCheckBox.Checked += (_, _) =>
                 explorer.HandleFolderThumbnailsChanged(_sidebar.FolderThumbnailsCheckBox.IsChecked == true);
             _sidebar.FolderThumbnailsCheckBox.Unchecked += (_, _) =>

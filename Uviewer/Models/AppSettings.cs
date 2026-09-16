@@ -30,6 +30,9 @@ namespace Uviewer.Models
         public double UnsharpRadius { get; set; } = 1.0;
         public double ExplorerThumbnailSize { get; set; } = 80;
         public bool ShowFolderThumbnails { get; set; } = false;
+        // 0 means "use the application default"; normalized on load.
+        public double SidebarDefaultWidth { get; set; }
+        public double SidebarExpandedWidth { get; set; }
         public string ExternalProgramPath { get; set; } = DefaultExternalProgramPath;
         public AppToolbarSettings Toolbar { get; set; } = AppToolbarSettings.CreateDefault();
     }
@@ -156,6 +159,8 @@ namespace Uviewer.Models
         public bool ShowFolderThumbnails { get; set; }
         public bool SidebarVisible { get; set; } = true;
         public bool Pinned { get; set; } = true;
+        public double SidebarDefaultWidth { get; set; }
+        public double SidebarExpandedWidth { get; set; }
     }
 
     public class AppBehaviorSettings

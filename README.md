@@ -63,9 +63,11 @@
 - **Auto Side-by-Side in Archive**: When enabled, the viewer automatically applies side-by-side (2-page) view for portrait-oriented images (height = width * 1.2~3) when browsing archives and EPUB, provided the window width is at least 1.2 times its height.
 
 #### 🗂️ Explorer Thumbnail Settings
-- **Thumbnail Button Settings**: Left-click the sidebar thumbnail/list toggle button (**Ctrl+3**) to toggle the sidebar between the list view and the 2.5x-wide thumbnail view; right-click it to open thumbnail settings. The button is dimmed (disabled) in fullscreen or while UI auto-hide is on.
+- **Thumbnail Button Settings**: Left-click the sidebar thumbnail/list toggle button (**Ctrl+3**) to toggle the sidebar between the list view and the expanded thumbnail view (default 800px wide); right-click it to open thumbnail settings. The button is dimmed (disabled) in fullscreen or while UI auto-hide is on.
   - **Thumbnail Size**: Adjust the thumbnail grid size with a slider and preview the result immediately.
   - **Folder Thumbnails**: When enabled, folders show the first image inside the folder as their thumbnail.
+  - **Sidebar Default Width**: Set the sidebar width used in the normal (list) view (200–600px).
+  - **Sidebar Expanded Width**: Set the sidebar width used by **Ctrl+3** / the thumbnail view button (400–1200px).
 
 #### 🎨 Image Sharpening & Upscaling
 - **Advanced Sharpening Control**: Right-click the **Sharpening (S)** button to open the settings flyout.
@@ -111,7 +113,7 @@
 | **T** | Global | Toggle Always on Top |
 | **Ctrl + O** | Global | Open File |
 | **Ctrl + B** | Global | Toggle Sidebar |
-| **Ctrl + 3** | Global | Toggle Sidebar Width (Default / 2.5x) + Thumbnail Mode (disabled in Fullscreen / while UI Auto-Hide is on) |
+| **Ctrl + 3** | Global | Toggle Sidebar Width (Default / Expanded, configurable in Thumbnail Settings) + Thumbnail Mode (disabled in Fullscreen / while UI Auto-Hide is on) |
 | **Ctrl + S** | Global | Add to Favorites |
 | **Ctrl + F** | Text / EPUB / PDF | Open Search |
 | **+ / -**  | Global | Zoom In/Out / Font Size Up/Down (-/= also works) |

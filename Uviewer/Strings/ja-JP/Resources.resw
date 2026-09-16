@@ -172,6 +172,12 @@
   <data name="ShowFolderThumbnailsLabel" xml:space="preserve">
     <value>フォルダーのサムネイルを表示</value>
   </data>
+  <data name="SidebarDefaultWidthLabel" xml:space="preserve">
+    <value>サイドバー標準幅:</value>
+  </data>
+  <data name="SidebarExpandedWidthLabel" xml:space="preserve">
+    <value>サイドバー拡大幅:</value>
+  </data>
   <data name="ParentFolderTooltip" xml:space="preserve">
     <value>上のフォルダへ(Backspace)</value>
   </data>

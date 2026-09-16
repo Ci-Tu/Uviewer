@@ -57,6 +57,8 @@ namespace Uviewer
         public static string ThumbnailSettingsTitle => GetString("ThumbnailSettingsTitle");
         public static string ThumbnailSizeLabel => GetString("ThumbnailSizeLabel");
         public static string ShowFolderThumbnailsLabel => GetString("ShowFolderThumbnailsLabel");
+        public static string SidebarDefaultWidthLabel => GetString("SidebarDefaultWidthLabel");
+        public static string SidebarExpandedWidthLabel => GetString("SidebarExpandedWidthLabel");
         public static string ExplorerFilterPlaceholder => GetString("ExplorerFilterPlaceholder");
         public static string ExplorerFilterKindLabel => GetString("ExplorerFilterKindLabel");
         public static string ExplorerFilterAll => GetString("ExplorerFilterAll");

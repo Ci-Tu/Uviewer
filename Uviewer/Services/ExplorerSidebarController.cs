@@ -29,6 +29,8 @@ namespace Uviewer.Services
         string? WebDavServerName { get; }
         double ExplorerThumbnailSize { get; set; }
         bool ShowFolderThumbnails { get; set; }
+        double SidebarDefaultWidth { get; set; }
+        double SidebarExpandedWidth { get; set; }
         FileItem? ExplorerContextItem { get; set; }
 
         ListView FileListView { get; }
@@ -43,6 +45,10 @@ namespace Uviewer.Services
         Slider ThumbnailSizeSlider { get; }
         TextBlock ThumbnailSizeValueText { get; }
         CheckBox FolderThumbnailsCheckBox { get; }
+        Slider SidebarDefaultWidthSlider { get; }
+        TextBlock SidebarDefaultWidthValueText { get; }
+        Slider SidebarExpandedWidthSlider { get; }
+        TextBlock SidebarExpandedWidthValueText { get; }
         PathBreadcrumbControl CurrentPathBreadcrumb { get; }
 
         void ClearWebDavForLocalExplorer();
@@ -321,6 +327,20 @@ namespace Uviewer.Services
             _host.ThumbnailSizeValueText.Text = $"{_host.ExplorerThumbnailSize:F0}px";
             _host.FolderThumbnailsCheckBox.IsChecked = _host.ShowFolderThumbnails;
 
+            if (Math.Abs(_host.SidebarDefaultWidthSlider.Value - _host.SidebarDefaultWidth) > 0.1)
+            {
+                _host.SidebarDefaultWidthSlider.Value = _host.SidebarDefaultWidth;
+            }
+
+            _host.SidebarDefaultWidthValueText.Text = $"{_host.SidebarDefaultWidth:F0}px";
+
+            if (Math.Abs(_host.SidebarExpandedWidthSlider.Value - _host.SidebarExpandedWidth) > 0.1)
+            {
+                _host.SidebarExpandedWidthSlider.Value = _host.SidebarExpandedWidth;
+            }
+
+            _host.SidebarExpandedWidthValueText.Text = $"{_host.SidebarExpandedWidth:F0}px";
+
             ApplyThumbnailSizeToFileItems();
         }
 
@@ -447,6 +467,20 @@ namespace Uviewer.Services
             _host.ShowFolderThumbnails = isChecked;
             ApplyExplorerThumbnailOptions();
             _explorerController.RefreshThumbnails(clearExisting: false);
+            _host.SaveWindowSettings();
+        }
+
+        public void HandleSidebarDefaultWidthChanged(double newValue)
+        {
+            _host.SidebarDefaultWidth = newValue;
+            _host.SidebarDefaultWidthValueText.Text = $"{_host.SidebarDefaultWidth:F0}px";
+            _host.SaveWindowSettings();
+        }
+
+        public void HandleSidebarExpandedWidthChanged(double newValue)
+        {
+            _host.SidebarExpandedWidth = newValue;
+            _host.SidebarExpandedWidthValueText.Text = $"{_host.SidebarExpandedWidth:F0}px";
             _host.SaveWindowSettings();
         }
 
