@@ -467,7 +467,8 @@ namespace Uviewer
                 return;
             }
 
-            MessageBox(IntPtr.Zero, $"Unhandled Error:\n{e.Message}\n\n{e.Exception.StackTrace}", "Uviewer Fatal Error", 0x10);
+            Services.StartupDiagnostics.Record("Unhandled UI exception", e.Exception);
+            MessageBox(IntPtr.Zero, $"Unhandled Error:\n{e.Exception}\n\nDiagnostic log: {Services.StartupDiagnostics.LogPath}", "Uviewer Fatal Error", 0x10);
             e.Handled = true; // Prevent immediate termination to show message
         }
 
@@ -492,8 +493,9 @@ namespace Uviewer
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error launching window: {ex.Message}\n{ex.StackTrace}");
-                MessageBox(IntPtr.Zero, $"Critical Error Launching App:\n{ex.Message}\n\n{ex.StackTrace}", "Uviewer Startup Error", 0x10);
+                Services.StartupDiagnostics.Record("Launching main window", ex);
+                System.Diagnostics.Debug.WriteLine($"Error launching window: {ex}");
+                MessageBox(IntPtr.Zero, $"Critical Error Launching App:\n{ex}\n\nDiagnostic log: {Services.StartupDiagnostics.LogPath}", "Uviewer Startup Error", 0x10);
             }
         }
 

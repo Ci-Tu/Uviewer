@@ -59,7 +59,7 @@
                                         <TextBlock x:Name="ThumbnailSizeLabel" Text="{x:Bind app:Strings.ThumbnailSizeLabel}" FontSize="12" HorizontalAlignment="Left"/>
                                         <TextBlock x:Name="ThumbnailSizeValueText" Text="80" FontSize="12" HorizontalAlignment="Right"/>
                                     </Grid>
-                                    <Slider x:Name="ThumbnailSizeSlider" Minimum="64" Maximum="180" StepFrequency="4" Value="80"/>
+                                    <Slider x:Name="ThumbnailSizeSlider"/>
                                     <CheckBox x:Name="FolderThumbnailsCheckBox" Content="{x:Bind app:Strings.ShowFolderThumbnailsLabel}"/>
 
                                     <Border Height="1" Background="{ThemeResource DividerStrokeColorDefaultBrush}"/>
@@ -67,12 +67,12 @@
                                         <TextBlock x:Name="SidebarDefaultWidthLabel" Text="{x:Bind app:Strings.SidebarDefaultWidthLabel}" FontSize="12" HorizontalAlignment="Left"/>
                                         <TextBlock x:Name="SidebarDefaultWidthValueText" Text="340" FontSize="12" HorizontalAlignment="Right"/>
                                     </Grid>
-                                    <Slider x:Name="SidebarDefaultWidthSlider" Minimum="200" Maximum="600" StepFrequency="10" Value="340"/>
+                                    <Slider x:Name="SidebarDefaultWidthSlider"/>
                                     <Grid>
                                         <TextBlock x:Name="SidebarExpandedWidthLabel" Text="{x:Bind app:Strings.SidebarExpandedWidthLabel}" FontSize="12" HorizontalAlignment="Left"/>
                                         <TextBlock x:Name="SidebarExpandedWidthValueText" Text="760" FontSize="12" HorizontalAlignment="Right"/>
                                     </Grid>
-                                    <Slider x:Name="SidebarExpandedWidthSlider" Minimum="400" Maximum="1200" StepFrequency="10" Value="760"/>
+                                    <Slider x:Name="SidebarExpandedWidthSlider"/>
                                 </StackPanel>
                             </Flyout>
                         </Button.ContextFlyout>

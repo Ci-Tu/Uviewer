@@ -39,6 +39,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Strings\en-US\Resources.resw" LogicalName="Uviewer.FallbackStrings.resw" />
     <Content Include="Assets\Uviewer.ico" />
     <Content Include="Assets\Uviewer2.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

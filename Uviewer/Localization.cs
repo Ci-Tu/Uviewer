@@ -1,22 +1,65 @@
 using System;
+using System.Collections.Generic;
+using System.Xml.Linq;
 using Microsoft.Windows.ApplicationModel.Resources;
 
 namespace Uviewer
 {
     public static class Strings
     {
-        private static ResourceLoader _loader = new ResourceLoader();
+        // Keep MRT failures out of the static initializer: a failed type initializer
+        // would make every subsequent x:Bind to Strings fail for this process.
+        private static ResourceLoader? _loader = CreateLoader();
+        private static readonly Lazy<Dictionary<string, string>> FallbackStrings = new(LoadFallbackStrings);
+
+        private static ResourceLoader? CreateLoader()
+        {
+            try
+            {
+                return new ResourceLoader();
+            }
+            catch (Exception ex)
+            {
+                Services.StartupDiagnostics.Record("Creating language resource loader", ex);
+                return null;
+            }
+        }
+
+        private static Dictionary<string, string> LoadFallbackStrings()
+        {
+            var strings = new Dictionary<string, string>(StringComparer.Ordinal);
+            try
+            {
+                // Embedded in the assembly so Store language resource selection cannot remove it.
+                using var stream = typeof(Strings).Assembly.GetManifestResourceStream("Uviewer.FallbackStrings.resw");
+                if (stream != null)
+                {
+                    foreach (var entry in XDocument.Load(stream).Root!.Elements("data"))
+                    {
+                        if (entry.Attribute("name")?.Value is string name && entry.Element("value")?.Value is string value)
+                            strings[name] = value;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Services.StartupDiagnostics.Record("Loading fallback language strings", ex);
+            }
+            return strings;
+        }
 
         private static string GetString(string key)
         {
             try
             {
-                return _loader.GetString(key);
+                string? value = _loader?.GetString(key);
+                if (!string.IsNullOrEmpty(value)) return value;
             }
             catch
             {
-                return key;
+                // A missing language candidate must not prevent the UI from loading.
             }
+            return FallbackStrings.Value.TryGetValue(key, out string? fallback) ? fallback : key;
         }
 
         // Tooltips & General Strings
@@ -254,14 +297,7 @@ namespace Uviewer
 
         public static void Reload()
         {
-            try
-            {
-                _loader = new ResourceLoader();
-            }
-            catch
-            {
-                _loader = new ResourceLoader();
-            }
+            _loader = CreateLoader();
         }
 
         // Methods

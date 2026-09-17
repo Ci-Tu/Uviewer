@@ -23,11 +23,33 @@ namespace Uviewer.Controls
 
         public ExplorerSidebarControl()
         {
-            InitializeComponent();
+            try
+            {
+                InitializeComponent();
+                // Initialize ranges in a deterministic order, independent of XBF loading.
+                InitializeSlider(ThumbnailSizeSlider, 64, 180, 4, 80);
+                InitializeSlider(SidebarDefaultWidthSlider, 200, 600, 10, 340);
+                InitializeSlider(SidebarExpandedWidthSlider, 400, 1200, 10, 760);
+            }
+            catch (Exception ex)
+            {
+                // Capture the original exception before the outer XAML loader wraps it
+                // as "Cannot create instance of type ExplorerSidebarControl".
+                Services.StartupDiagnostics.Record("ExplorerSidebarControl initialization", ex);
+                throw;
+            }
             Loaded += (_, _) => QueueOverflowUpdate();
             SidebarToolbarRoot.SizeChanged += (_, _) => QueueOverflowUpdate();
             // ListView/GridView mark pointer presses as handled, so listen even for handled events.
             AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler(OnPointerPressed), true);
+        }
+
+        private static void InitializeSlider(Slider slider, double minimum, double maximum, double step, double value)
+        {
+            slider.Maximum = maximum;
+            slider.Minimum = minimum;
+            slider.StepFrequency = step;
+            slider.Value = value;
         }
 
         private void OnPointerPressed(object sender, PointerRoutedEventArgs e)
