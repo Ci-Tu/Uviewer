@@ -314,11 +314,19 @@
                                     </Grid.ColumnDefinitions>
 
                                     <FontIcon Glyph="{Binding Icon}" FontSize="14"
+                                              VerticalAlignment="Center"
                                               Foreground="{Binding IconColor}"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding Name}" 
-                                               VerticalAlignment="Center"
-                                               FontFamily="{ThemeResource ContentControlThemeFontFamily}"
-                                               TextTrimming="CharacterEllipsis"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontFamily="{ThemeResource ContentControlThemeFontFamily}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding DisplayPath}"
+                                                   FontSize="11"
+                                                   Visibility="{Binding DisplayPathVisibility}"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   FontFamily="{ThemeResource ContentControlThemeFontFamily}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
                                 </Grid>
                             </DataTemplate>
                         </ListView.ItemTemplate>

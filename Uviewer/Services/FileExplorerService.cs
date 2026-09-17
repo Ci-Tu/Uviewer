@@ -222,7 +222,7 @@ namespace Uviewer.Services
                         ApplyFileKind(fileItem, fileKind);
                         if (!MatchesFilter(fileItem, filterText, kind)) continue;
 
-                        fileItem.Name = GetRelativeDisplayName(rootPath, filePath);
+                        fileItem.DisplayPath = GetRelativeFolderPath(rootPath, filePath);
                         items.Add(fileItem);
                     }
 
@@ -237,7 +237,7 @@ namespace Uviewer.Services
                         var dirItem = new FileItem { Name = dirName, FullPath = dirPath, IsDirectory = true };
                         if (MatchesFilter(dirItem, filterText, kind))
                         {
-                            dirItem.Name = GetRelativeDisplayName(rootPath, dirPath);
+                            dirItem.DisplayPath = GetRelativeFolderPath(rootPath, dirPath);
                             items.Add(dirItem);
                         }
 
@@ -279,16 +279,20 @@ namespace Uviewer.Services
             };
         }
 
-        private static string GetRelativeDisplayName(string rootPath, string path)
+        /// <summary>현재 폴더를 기준으로 항목이 들어 있는 폴더의 상대 경로를 반환합니다(예: 하위\깊은폴더).</summary>
+        private static string GetRelativeFolderPath(string rootPath, string path)
         {
             try
             {
                 var relative = Path.GetRelativePath(rootPath, path);
-                return relative.StartsWith("..", StringComparison.Ordinal) ? Path.GetFileName(path) : relative;
+                if (relative.StartsWith("..", StringComparison.Ordinal)) return "";
+
+                var folder = Path.GetDirectoryName(relative);
+                return string.IsNullOrEmpty(folder) || folder == "." ? "" : folder;
             }
             catch
             {
-                return Path.GetFileName(path);
+                return "";
             }
         }
 

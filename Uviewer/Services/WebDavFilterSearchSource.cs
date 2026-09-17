@@ -113,7 +113,7 @@ namespace Uviewer.Services
                             if (fileItem == null) continue;
                             if (!FileExplorerService.MatchesFilter(fileItem, filterText, kind)) continue;
 
-                            fileItem.Name = ToRelativeDisplayName(rootPath, remote.FullPath);
+                            fileItem.DisplayPath = ToRelativeFolderPath(rootPath, remote.FullPath);
                             matches.Add(fileItem);
                         }
 
@@ -159,6 +159,13 @@ namespace Uviewer.Services
             return lastSlash >= 0 ? path.Substring(lastSlash + 1) : path;
         }
 
+        /// <summary>현재 폴더 기준으로 항목이 들어 있는 폴더의 상대 경로를 만듭니다(예: 하위\깊은폴더).</summary>
+        private static string ToRelativeFolderPath(string rootPath, string remotePath)
+        {
+            var relative = ToRelativeDisplayName(rootPath, remotePath);
+            var lastSeparator = relative.LastIndexOf('\\');
+            return lastSeparator > 0 ? relative.Substring(0, lastSeparator) : "";
+        }
         private static string NormalizePath(string remotePath) => remotePath.TrimEnd('/');
     }
 }

@@ -11,6 +11,30 @@ namespace Uviewer.Models
     {
         public string Name { get; set; } = "";
         public string FullPath { get; set; } = "";
+
+        private string _displayPath = "";
+
+        /// <summary>
+        /// 하위 폴더 검색(이름 필터) 결과에서 파일 이름 아래에 표시할 상대 경로입니다.
+        /// 현재 폴더 바로 아래 항목은 빈 문자열이라 표시되지 않습니다.
+        /// </summary>
+        public string DisplayPath
+        {
+            get => _displayPath;
+            set
+            {
+                var normalized = value ?? "";
+                if (_displayPath == normalized) return;
+
+                _displayPath = normalized;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(DisplayPathVisibility));
+            }
+        }
+
+        public Visibility DisplayPathVisibility =>
+            string.IsNullOrEmpty(_displayPath) ? Visibility.Collapsed : Visibility.Visible;
+
         public bool IsDirectory { get; set; }
         public bool IsArchive { get; set; }
         public bool IsImage { get; set; }
