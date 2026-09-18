@@ -30,6 +30,7 @@ namespace Uviewer.Services
         public string Title { get; init; } = string.Empty;
         public bool KeepInTray { get; init; }
         public bool AllowMultipleInstances { get; init; }
+        public bool HasVisibleWindow { get; init; } = true;
     }
 
     /// <summary>
@@ -59,6 +60,7 @@ namespace Uviewer.Services
         private string _lastWrittenTitle = string.Empty;
         private bool _lastWrittenKeepInTray;
         private bool _lastWrittenAllowMultipleInstances;
+        private bool _lastWrittenHasVisibleWindow;
         private bool _hasWrittenEntry;
         private bool _isTrayOwner = true;
         private bool _disposed;
@@ -110,7 +112,7 @@ namespace Uviewer.Services
         /// <summary>
         /// 이 인스턴스의 상태를 등록하고 트레이 아이콘 소유자를 다시 계산합니다.
         /// </summary>
-        public void UpdateSelf(string title, bool keepInTray, bool allowMultipleInstances)
+        public void UpdateSelf(string title, bool keepInTray, bool allowMultipleInstances, bool hasVisibleWindow)
         {
             if (_disposed) return;
 
@@ -118,12 +120,14 @@ namespace Uviewer.Services
             if (!_hasWrittenEntry ||
                 !string.Equals(_lastWrittenTitle, normalizedTitle, StringComparison.Ordinal) ||
                 _lastWrittenKeepInTray != keepInTray ||
-                _lastWrittenAllowMultipleInstances != allowMultipleInstances)
+                _lastWrittenAllowMultipleInstances != allowMultipleInstances ||
+                _lastWrittenHasVisibleWindow != hasVisibleWindow)
             {
-                WriteEntry(normalizedTitle, keepInTray, allowMultipleInstances);
+                WriteEntry(normalizedTitle, keepInTray, allowMultipleInstances, hasVisibleWindow);
                 _lastWrittenTitle = normalizedTitle;
                 _lastWrittenKeepInTray = keepInTray;
                 _lastWrittenAllowMultipleInstances = allowMultipleInstances;
+                _lastWrittenHasVisibleWindow = hasVisibleWindow;
                 _hasWrittenEntry = true;
             }
 
@@ -262,7 +266,7 @@ namespace Uviewer.Services
         private string GetEntryFilePath() =>
             Path.Combine(_registryDirectory, $"{EntryFilePrefix}{_processId}.txt");
 
-        private void WriteEntry(string title, bool keepInTray, bool allowMultipleInstances)
+        private void WriteEntry(string title, bool keepInTray, bool allowMultipleInstances, bool hasVisibleWindow)
         {
             try
             {
@@ -276,6 +280,7 @@ namespace Uviewer.Services
                 builder.Append("hwnd=").Append(_windowHandle.ToInt64().ToString(CultureInfo.InvariantCulture)).Append('\n');
                 builder.Append("keep=").Append(keepInTray ? '1' : '0').Append('\n');
                 builder.Append("multi=").Append(allowMultipleInstances ? '1' : '0').Append('\n');
+                builder.Append("visible=").Append(hasVisibleWindow ? '1' : '0').Append('\n');
                 builder.Append("title=").Append(title).Append('\n');
 
                 File.WriteAllText(temp, builder.ToString(), new UTF8Encoding(false));
@@ -305,6 +310,7 @@ namespace Uviewer.Services
                 long windowHandle = 0;
                 bool keepInTray = false;
                 bool allowMultipleInstances = false;
+                bool hasVisibleWindow = true;
 
                 foreach (string line in text.Split('\n'))
                 {
@@ -328,6 +334,9 @@ namespace Uviewer.Services
                         case "multi":
                             allowMultipleInstances = value == "1";
                             break;
+                        case "visible":
+                            hasVisibleWindow = value != "0";
+                            break;
                         case "title":
                             title = value;
                             break;
@@ -343,7 +352,8 @@ namespace Uviewer.Services
                     WindowHandle = windowHandle,
                     Title = title ?? string.Empty,
                     KeepInTray = keepInTray,
-                    AllowMultipleInstances = allowMultipleInstances
+                    AllowMultipleInstances = allowMultipleInstances,
+                    HasVisibleWindow = hasVisibleWindow
                 };
                 return true;
             }

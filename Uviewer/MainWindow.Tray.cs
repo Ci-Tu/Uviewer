@@ -49,6 +49,20 @@ namespace Uviewer
                 && !_isWindowClosing
                 && IsTrayOwner();
             _trayIconService?.SetVisible(shouldShow);
+
+            // 창이 모두 닫힌(트레이로 숨겨진) 상태에서는 트레이 소유자 하나만 남기고,
+            // 소유자가 아닌 숨김 인스턴스는 유지하지 않습니다.
+            if (!shouldShow
+                && _allowMultipleInstances
+                && _keepInTray
+                && _isHiddenToTray
+                && !_trayExitRequested
+                && !_isWindowClosing
+                && !_isWindowCloseCommitted
+                && !IsTrayOwner())
+            {
+                _shutdownCoordinator.RequestClose(Close);
+            }
         }
 
         private bool TryHideToTray()
@@ -72,6 +86,7 @@ namespace Uviewer
                 cursorTrackingSuspended = true;
                 AppWindow.Hide();
                 _isHiddenToTray = true;
+                RefreshMultiInstanceState();
                 _explorerSidebarController.ClearFilter(focusInput: false);
                 _trayDocumentReleaseTask = ReleaseDocumentAfterHidingToTrayAsync();
                 return true;
@@ -100,6 +115,7 @@ namespace Uviewer
 
             AppWindow.Show();
             _isHiddenToTray = false;
+            RefreshMultiInstanceState();
             if (AppWindow.Presenter is OverlappedPresenter overlapped &&
                 overlapped.State == OverlappedPresenterState.Minimized)
             {
@@ -260,7 +276,13 @@ namespace Uviewer
 
         private void RefreshMultiInstanceState()
         {
-            _multiInstanceCoordinator?.UpdateSelf(GetInstanceDisplayTitle(), _keepInTray, _allowMultipleInstances);
+            // 실제로 화면에 표시 중인 창만 트레이 목록에 노출되도록 상태를 함께 공유합니다.
+            bool hasVisibleWindow = !_isHiddenToTray && !_isWindowClosing && !_isWindowCloseCommitted;
+            _multiInstanceCoordinator?.UpdateSelf(
+                GetInstanceDisplayTitle(),
+                _keepInTray,
+                _allowMultipleInstances,
+                hasVisibleWindow);
         }
 
         private bool IsTrayOwner()
@@ -280,6 +302,9 @@ namespace Uviewer
 
             foreach (InstanceInfo instance in coordinator.GetLiveInstances())
             {
+                // 트레이로 숨겨진(열린 창이 없는) 인스턴스는 목록에서 제외합니다.
+                if (!instance.HasVisibleWindow) continue;
+
                 items.Add(new TrayWindowItem
                 {
                     Title = string.IsNullOrWhiteSpace(instance.Title) ? Strings.WindowTitle : instance.Title,

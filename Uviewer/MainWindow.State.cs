@@ -209,6 +209,7 @@ namespace Uviewer
         private bool _keepInTray;
         private bool _trayExitRequested;
         private bool _isHiddenToTray;
+        private bool _isWindowCloseCommitted;
         private Services.TrayIconService? _trayIconService;
         private Services.MultiInstanceCoordinator? _multiInstanceCoordinator;
         private Microsoft.UI.Dispatching.DispatcherQueueTimer? _multiInstanceTimer;

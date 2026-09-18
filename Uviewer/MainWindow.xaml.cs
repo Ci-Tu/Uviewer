@@ -447,6 +447,10 @@ namespace Uviewer
                 args.Cancel = false;
             }
 
+            // 창이 실제로 닫히면 트레이 우클릭 목록에서 이 인스턴스를 즉시 제외합니다.
+            _isWindowCloseCommitted = true;
+            RefreshMultiInstanceState();
+
             SaveWindowSettingsForShutdown();
         }
 
