@@ -134,7 +134,6 @@
                     PointerCanceled="FileNameStatusHoverSurface_PointerExited"
                     Tapped="FileNameStatusHoverSurface_Tapped">
                 <TextBlock x:Name="FileNameText"
-                           Text="{x:Bind app:Strings.FileSelectPlaceholder}"
                            FontSize="12"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            HorizontalAlignment="Stretch"

@@ -341,7 +341,19 @@ namespace Uviewer
                 CurrentPathBreadcrumb.Text = Strings.CurrentPathPlaceholder;
             }
 
-            if ((_imageEntries == null || _imageEntries.Count == 0) || _currentIndex < 0)
+            // Only show the placeholder when nothing is opened yet.
+            // A text/EPUB/PDF/archive document has no image entries, so the previous
+            // image-only check overwrote the file name with the placeholder whenever
+            // localization was refreshed (e.g. the delayed refresh from LoadTextSettings).
+            bool hasOpenDocument =
+                !string.IsNullOrEmpty(_currentTextFilePath)
+                || _currentTextArchiveEntryKey != null
+                || !string.IsNullOrEmpty(_currentEpubFilePath)
+                || _archiveSession.HasArchive
+                || _currentPdfDocument != null
+                || (_imageEntries != null && _imageEntries.Count > 0 && _currentIndex >= 0);
+
+            if (!hasOpenDocument)
             {
                 FileNameText.Text = Strings.FileSelectPlaceholder;
             }
