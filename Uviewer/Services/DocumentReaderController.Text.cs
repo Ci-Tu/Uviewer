@@ -605,20 +605,21 @@ namespace Uviewer
             _textTotalLineCountInSource = loadPlan.TotalLineCount;
             _isTextLinesFullyLoaded = false;
 
+            token.ThrowIfCancellationRequested();
+            ApplyPlainTextLayout();
             var lineStyle = CreatePlainTextLineStyle();
 
             if (loadPlan.RequiresProgressiveLoad)
             {
-                _textLines = await _textLineLoadService.CreateInitialLinesAsync(loadPlan, lineStyle, token);
+                var initialLines = await _textLineLoadService.CreateInitialLinesAsync(loadPlan, lineStyle, token);
+                token.ThrowIfCancellationRequested();
+                _textLines = initialLines;
 
                 if (TextItemsRepeater != null)
                 {
                     TextItemsRepeater.ItemsSource = null;
 
-                    if (targetLine <= 1 && TextScrollViewer != null)
-                    {
-                        TextScrollViewer.ChangeView(null, 0, null, true);
-                    }
+                    TextScrollViewer?.ChangeView(null, 0, null, true);
 
                     _progressiveTextItems = new RangeObservableCollection<TextLine>(_textLines);
                     TextItemsRepeater.ItemsSource = _progressiveTextItems;
@@ -671,7 +672,9 @@ namespace Uviewer
             }
             else
             {
-                _textLines = await _textLineLoadService.CreateAllLinesAsync(loadPlan, lineStyle, token);
+                var allLines = await _textLineLoadService.CreateAllLinesAsync(loadPlan, lineStyle, token);
+                token.ThrowIfCancellationRequested();
+                _textLines = allLines;
                 _isTextLinesFullyLoaded = true;
                 _progressiveTextItems = null;
 
@@ -679,10 +682,7 @@ namespace Uviewer
                 {
                     TextItemsRepeater.ItemsSource = null;
 
-                    if (targetLine <= 1 && TextScrollViewer != null)
-                    {
-                        TextScrollViewer.ChangeView(null, 0, null, true);
-                    }
+                    TextScrollViewer?.ChangeView(null, 0, null, true);
 
                     TextItemsRepeater.ItemsSource = _textLines;
                     if (targetLine > 1)
@@ -702,7 +702,8 @@ namespace Uviewer
         {
             return _textLineLayoutService.CalculateReadableMaxWidth(
                 TextArea?.ActualWidth ?? 0,
-                _settingsManager.FontSize);
+                _settingsManager.FontSize,
+                _settingsManager.WrapLength);
         }
 
         internal Windows.UI.Text.FontWeight GetFontWeightForFamily(string fontFamily)
@@ -715,6 +716,20 @@ namespace Uviewer
             _settingsManager.FontFamily,
             _settingsManager.GetThemeForeground(),
             GetUrlMaxWidth());
+
+        private void ApplyPlainTextLayout()
+        {
+            // Align one fixed-width reading column, never the individual paragraphs.
+            // StackLayout can then measure recycled lines with a stable width.
+            double width = GetUrlMaxWidth();
+            if (TextItemsRepeater.Width != width) TextItemsRepeater.Width = width;
+            TextItemsRepeater.HorizontalAlignment = _settingsManager.Alignment switch
+            {
+                TextAlignment.Center => HorizontalAlignment.Center,
+                TextAlignment.Right => HorizontalAlignment.Right,
+                _ => HorizontalAlignment.Left
+            };
+        }
 
         internal async Task RefreshTextDisplay(bool resetScroll = false)
         {
@@ -762,6 +777,7 @@ namespace Uviewer
 
             // Keep model updates and realized elements on the UI thread so repeated
             // shortcuts cannot race each other or a progressive-load append.
+            ApplyPlainTextLayout();
             _textLineLayoutService.UpdateLines(_textLines, CreatePlainTextLineStyle());
             TextArea.Background = _settingsManager.GetThemeBackground();
 
@@ -783,6 +799,16 @@ namespace Uviewer
         // --- Toolbar Handlers ---
 
         // --- Toolbar Handlers ---
+
+        internal async Task ShowTextOptionsAsync()
+        {
+            var result = await _textDialogService.ShowTextOptionsAsync(_settingsManager.WrapLength, _settingsManager.Alignment);
+            if (result is not { } options) return;
+            _settingsManager.WrapLength = options.wrapLength;
+            _settingsManager.Alignment = options.alignment;
+            SaveTextSettings();
+            await RefreshTextDisplay();
+        }
 
         internal void ColorsMenu_Click(object sender, RoutedEventArgs e)
         {
@@ -1202,9 +1228,20 @@ namespace Uviewer
         internal void TextScrollViewer_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             // Re-calc max width if needed, but it is bound to line prop.
-            if (_isTextMode && !_isAozoraMode)
+            if (_isTextMode && !_isAozoraMode && !_isVerticalMode)
             {
-                StartPageCalculationAsync();
+                if (Math.Abs(e.NewSize.Width - e.PreviousSize.Width) > 0.5)
+                {
+                    DispatcherQueue.TryEnqueue(() =>
+                    {
+                        if (_isTextMode && !_isAozoraMode && !_isVerticalMode)
+                            _ = RefreshTextDisplay();
+                    });
+                }
+                else
+                {
+                    StartPageCalculationAsync();
+                }
             }
         }
 
@@ -1298,7 +1335,8 @@ namespace Uviewer
                     TextScrollViewer,
                     line,
                     _textLines.Count,
-                    _settingsManager.FontSize);
+                    _settingsManager.FontSize,
+                    _globalTextCts?.Token ?? CancellationToken.None);
                 UpdateTextStatusBar();
             }
             catch (OperationCanceledException) { }

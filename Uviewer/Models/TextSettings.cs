@@ -4,6 +4,8 @@ namespace Uviewer.Models
 {
     public class TextSettings
     {
+        public int WrapLength { get; set; } = 42;
+        public Microsoft.UI.Xaml.TextAlignment Alignment { get; set; } = Microsoft.UI.Xaml.TextAlignment.Left;
         public double FontSize { get; set; } = 18;
         public string FontFamily { get; set; } = "Yu Gothic";
         public int ThemeIndex { get; set; } = 0;

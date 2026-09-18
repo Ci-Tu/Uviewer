@@ -92,13 +92,13 @@ namespace Uviewer.Services
             return line;
         }
 
-        public double CalculateReadableMaxWidth(double textAreaWidth, double fontSize)
+        public double CalculateReadableMaxWidth(double textAreaWidth, double fontSize, int wrapLength = 42)
         {
             double containerWidth = textAreaWidth > 0
                 ? textAreaWidth - 80
                 : 800;
 
-            double limitedWidth = 42 * fontSize;
+            double limitedWidth = Math.Clamp(wrapLength, 10, 120) * fontSize;
             return Math.Max(100, Math.Min(containerWidth, limitedWidth));
         }
 

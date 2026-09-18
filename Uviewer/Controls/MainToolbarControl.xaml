@@ -50,6 +50,11 @@
                     <FontIcon Glyph="&#xE713;" FontSize="14"/>
                     <Button.Flyout>
                         <MenuFlyout x:Name="SettingsMenuFlyout" Placement="Bottom">
+                            <MenuFlyoutItem x:Name="TextOptionsMenuItem" Text="{x:Bind app:Strings.TextOptions}">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xE1A2;" />
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
                             <MenuFlyoutItem x:Name="ChangeFontMenuItem" Text="{x:Bind app:Strings.ChangeFont}">
                                 <MenuFlyoutItem.Icon>
                                     <FontIcon Glyph="&#xE8D2;"/>
@@ -490,4 +495,3 @@
         </Grid>
 
 </UserControl>
-

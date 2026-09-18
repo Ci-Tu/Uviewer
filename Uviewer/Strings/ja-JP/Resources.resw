@@ -707,4 +707,12 @@
   <data name="ExplorerFilterClear" xml:space="preserve"><value>絞り込みを解除 (Esc)</value></data>
   <data name="ExplorerFilterNoMatches" xml:space="preserve"><value>条件に一致する項目はありません。</value></data>
   <data name="TextSelectionCopied" xml:space="preserve"><value>クリップボードにコピーしました</value></data>
+  <data name="TextOptions" xml:space="preserve"><value>テキストオプション</value></data>
+  <data name="TextWrapLength" xml:space="preserve"><value>折り返し幅（文字サイズ単位）</value></data>
+  <data name="TextAlignmentLabel" xml:space="preserve"><value>テキスト領域の位置</value></data>
+  <data name="TextAlignLeft" xml:space="preserve"><value>左</value></data>
+  <data name="TextAlignCenter" xml:space="preserve"><value>中央</value></data>
+  <data name="TextAlignRight" xml:space="preserve"><value>右</value></data>
+  <data name="TextOptionsApply" xml:space="preserve"><value>適用</value></data>
+  <data name="TextOptionsHint" xml:space="preserve"><value>プレーンテキストと青空文庫の横書きに適用します。折り返し幅はウィンドウ幅以内に制限されます。</value></data>
 </root>

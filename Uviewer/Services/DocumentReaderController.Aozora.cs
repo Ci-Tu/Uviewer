@@ -201,8 +201,12 @@ namespace Uviewer
             ToggleAozoraMode();
         }
 
+        private bool _isAozoraModeSwitchInProgress;
+
         internal async void ToggleAozoraMode()
         {
+            if (_isAozoraModeSwitchInProgress) return;
+            _isAozoraModeSwitchInProgress = true;
             try
             {
                 if (IsPlainTextModeLockedDocumentActive())
@@ -273,6 +277,11 @@ namespace Uviewer
             {
                 System.Diagnostics.Debug.WriteLine($"Error in ToggleAozoraMode: {ex.Message}");
                 ShowNotification($"{ex.Message}", "\uE783", "Red");
+            }
+            finally
+            {
+                _isAozoraModeSwitchInProgress = false;
+                if (TextFastNavOverlay != null) TextFastNavOverlay.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -938,12 +947,23 @@ namespace Uviewer
             var selectionRanges = CanvasTextSelectionHelper.BuildRangesForDraw(_aozoraSelection, _aozoraSelectionGeometry, pageToken);
             var selectionGeometry = new CanvasTextGeometry(pageToken);
 
-            // ⭐ 새로 분리된 통합 렌더러 호출!
+            float contentLeft = margins.Left;
+            if (!_isMarkdownRenderMode)
+            {
+                float spareWidth = Math.Max(0, availableWidth - maxWidth);
+                contentLeft += _settingsManager.Alignment switch
+                {
+                    TextAlignment.Center => spareWidth / 2,
+                    TextAlignment.Right => spareWidth,
+                    _ => 0
+                };
+            }
+
             HorizontalRenderer.RenderBlocks(
                 ds: ds,
                 blocks: page.Blocks,
                 textColor: textColor,
-                marginLeft: margins.Left,
+                marginLeft: contentLeft,
                 marginTop: margins.Top,
                 maxWidth: maxWidth,
                 baseFontSize: _settingsManager.FontSize,

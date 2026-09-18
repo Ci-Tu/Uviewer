@@ -13,6 +13,8 @@ namespace Uviewer.Services
         private readonly string _settingsFilePath;
 
         // --- Settings Properties ---
+        public int WrapLength { get; set; } = 42;
+        public Microsoft.UI.Xaml.TextAlignment Alignment { get; set; } = Microsoft.UI.Xaml.TextAlignment.Left;
         public double FontSize { get; set; } = 18;
         public string FontFamily { get; set; } = "Yu Gothic";
         public string UIFontFamily { get; set; } = "";
@@ -42,6 +44,9 @@ namespace Uviewer.Services
 
                     if (settings != null)
                     {
+                        WrapLength = Math.Clamp(settings.WrapLength, 10, 120);
+                        Alignment = settings.Alignment is Microsoft.UI.Xaml.TextAlignment.Center or Microsoft.UI.Xaml.TextAlignment.Right
+                            ? settings.Alignment : Microsoft.UI.Xaml.TextAlignment.Left;
                         FontSize = Math.Clamp(settings.FontSize, 8, 72);
                         FontFamily = settings.FontFamily ?? "Yu Gothic";
                         ThemeIndex = settings.ThemeIndex;
@@ -70,6 +75,8 @@ namespace Uviewer.Services
             {
                 var settings = new TextSettings
                 {
+                    WrapLength = WrapLength,
+                    Alignment = Alignment,
                     FontSize = FontSize,
                     FontFamily = FontFamily,
                     ThemeIndex = ThemeIndex,

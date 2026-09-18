@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Foundation;
 
@@ -96,39 +97,33 @@ namespace Uviewer.Services
             ScrollViewer scrollViewer,
             int line,
             int lineCount,
-            double fontSize)
+            double fontSize,
+            CancellationToken token = default)
         {
             if (lineCount == 0) return;
-
             int index = Math.Clamp(line, 1, lineCount) - 1;
-            if (index < 0) return;
+            var source = repeater.ItemsSource;
 
-            double lineHeight = fontSize * LineHeightMultiplier;
-            double targetOffset = index * lineHeight;
+            // Let the newly attached source finish its normal layout. Forcing
+            // UpdateLayout at an estimated nonzero offset can repeatedly change
+            // StackLayout's extent and ScrollViewer's anchor during a mode switch.
+            await Task.Delay(16, token);
+            if (!ReferenceEquals(source, repeater.ItemsSource) || scrollViewer.Visibility != Visibility.Visible) return;
+            var element = repeater.GetOrCreateElement(index);
+            await Task.Delay(16, token);
+            if (!ReferenceEquals(source, repeater.ItemsSource) || scrollViewer.Visibility != Visibility.Visible) return;
 
-            await Task.Delay(50);
-            scrollViewer.UpdateLayout();
-
-            scrollViewer.ChangeView(null, targetOffset, null, true);
-            await Task.Delay(50);
-            scrollViewer.UpdateLayout();
-
-            try
+            if (element != null && repeater.GetElementIndex(element) == index)
             {
-                var element = repeater.GetOrCreateElement(index);
-                if (element != null)
+                element.StartBringIntoView(new BringIntoViewOptions
                 {
-                    element.UpdateLayout();
-                    element.StartBringIntoView(new BringIntoViewOptions
-                    {
-                        VerticalAlignmentRatio = 0,
-                        AnimationDesired = false
-                    });
-                }
+                    VerticalAlignmentRatio = 0,
+                    AnimationDesired = false
+                });
             }
-            catch
+            else
             {
-                scrollViewer.ChangeView(null, targetOffset, null, true);
+                scrollViewer.ChangeView(null, index * fontSize * LineHeightMultiplier, null, true);
             }
         }
     }

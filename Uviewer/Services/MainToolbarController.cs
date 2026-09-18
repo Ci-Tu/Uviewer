@@ -9,6 +9,7 @@ namespace Uviewer.Services
 {
     internal sealed class MainToolbarControllerHandlers
     {
+        public Func<Task> ShowTextOptionsAsync { get; init; } = null!;
         public Action ChangeFont { get; init; } = null!;
         public Func<string, Task> ApplyEncodingAsync { get; init; } = null!;
         public Action ChangeColors { get; init; } = null!;
@@ -80,6 +81,7 @@ namespace Uviewer.Services
 
         private void HookEvents()
         {
+            _toolbar.TextOptionsRequested += (_, _) => RunAsync(_handlers.ShowTextOptionsAsync);
             _toolbar.ChangeFontRequested += (_, _) => _handlers.ChangeFont();
             _toolbar.EncodingSelected += (_, encoding) => RunAsync(() => _handlers.ApplyEncodingAsync(encoding));
             _toolbar.ChangeColorsRequested += (_, _) => _handlers.ChangeColors();

@@ -16,6 +16,7 @@ namespace Uviewer
                         window.MainToolbar,
                         new MainToolbarControllerHandlers
                         {
+                            ShowTextOptionsAsync = () => window._documentReaderController.ShowTextOptionsAsync(),
                             ChangeFont = () => window._documentReaderController.FontMenu_Click(window.MainToolbar, new RoutedEventArgs()),
                             ApplyEncodingAsync = encoding => window._documentReaderController.ApplyEncodingSelectionAsync(encoding),
                             ChangeColors = () => window._documentReaderController.ColorsMenu_Click(window.MainToolbar, new RoutedEventArgs()),

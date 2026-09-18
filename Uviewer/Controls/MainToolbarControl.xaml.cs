@@ -12,6 +12,7 @@ namespace Uviewer.Controls
 {
     public sealed partial class MainToolbarControl : UserControl
     {
+        public event EventHandler? TextOptionsRequested;
         public event EventHandler? ChangeFontRequested;
         public event EventHandler<string>? EncodingSelected;
         public event EventHandler? ChangeColorsRequested;
@@ -106,6 +107,7 @@ namespace Uviewer.Controls
 
         private void HookEvents()
         {
+            TextOptionsMenuItem.Click += (_, _) => TextOptionsRequested?.Invoke(this, EventArgs.Empty);
             ChangeFontMenuItem.Click += (_, _) => ChangeFontRequested?.Invoke(this, EventArgs.Empty);
             EncAutoItem.Click += EncodingItem_Click;
             EncUtf8Item.Click += EncodingItem_Click;
@@ -248,6 +250,7 @@ namespace Uviewer.Controls
             ToolTipService.SetToolTip(NextPageButton, Strings.NextPageTooltip);
 
             AddToFavoritesButton.Content = Strings.AddToFavorites;
+            TextOptionsMenuItem.Text = Strings.TextOptions;
             ChangeFontMenuItem.Text = Strings.ChangeFont;
             ChangeUiFontMenuItem.Text = Strings.ChangeUiFont;
             EncodingMenuItem.Text = Strings.EncodingMenu;

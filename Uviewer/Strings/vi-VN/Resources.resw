@@ -707,4 +707,12 @@
   <data name="ExplorerFilterClear" xml:space="preserve"><value>Xóa bộ lọc (Esc)</value></data>
   <data name="ExplorerFilterNoMatches" xml:space="preserve"><value>Không có mục nào khớp với bộ lọc.</value></data>
   <data name="TextSelectionCopied" xml:space="preserve"><value>Đã sao chép vào clipboard</value></data>
+  <data name="TextOptions" xml:space="preserve"><value>Tùy chọn văn bản</value></data>
+  <data name="TextWrapLength" xml:space="preserve"><value>Độ rộng xuống dòng (đơn vị cỡ chữ)</value></data>
+  <data name="TextAlignmentLabel" xml:space="preserve"><value>Vị trí vùng văn bản</value></data>
+  <data name="TextAlignLeft" xml:space="preserve"><value>Trái</value></data>
+  <data name="TextAlignCenter" xml:space="preserve"><value>Giữa</value></data>
+  <data name="TextAlignRight" xml:space="preserve"><value>Phải</value></data>
+  <data name="TextOptionsApply" xml:space="preserve"><value>Áp dụng</value></data>
+  <data name="TextOptionsHint" xml:space="preserve"><value>Áp dụng cho văn bản thuần và Aozora nằm ngang. Độ rộng không vượt quá chiều rộng cửa sổ.</value></data>
 </root>
