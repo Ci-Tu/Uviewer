@@ -229,7 +229,9 @@ namespace Uviewer.Services
 
             if (!request.IsVerticalMode)
             {
-                float limitedWidth = (float)(request.FontSize * 42);
+                // 텍스트 옵션의 "줄바꿈 길이"를 EPUB 가로쓰기 열 폭에도 적용합니다.
+                int wrapLength = Math.Clamp(request.WrapLength, 10, 120);
+                float limitedWidth = (float)(request.FontSize * wrapLength);
                 if (maxWidth > limitedWidth) maxWidth = limitedWidth;
             }
 
@@ -328,6 +330,7 @@ namespace Uviewer.Services
             bool isPreview = false,
             int targetLine = -1,
             int maxPreviewPages = 3,
+            int wrapLength = 42,
             CancellationToken cancellationToken = default)
         {
             Html = html;
@@ -343,6 +346,7 @@ namespace Uviewer.Services
             TargetLine = targetLine;
             MaxPreviewPages = Math.Max(1, maxPreviewPages);
             CancellationToken = cancellationToken;
+            WrapLength = wrapLength;
         }
 
         public string Html { get; }
@@ -357,6 +361,7 @@ namespace Uviewer.Services
         public bool IsPreview { get; }
         public int TargetLine { get; }
         public int MaxPreviewPages { get; }
+        public int WrapLength { get; }
         public CancellationToken CancellationToken { get; }
     }
 

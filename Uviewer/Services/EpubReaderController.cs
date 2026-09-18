@@ -676,6 +676,7 @@ namespace Uviewer.Services
                 _isVerticalMode,
                 pinBlockIndex,
                 device,
+                wrapLength: _settingsManager.WrapLength,
                 cancellationToken: token);
             var result = await Task.Run(() => _epubPaginationService.CreatePagesAsync(
                 request,
@@ -719,6 +720,7 @@ namespace Uviewer.Services
                     device,
                     isPreview: true,
                     targetLine: targetLine,
+                    wrapLength: _settingsManager.WrapLength,
                     cancellationToken: token);
             var result = await Task.Run(() => _epubPaginationService.CreatePagesAsync(
                 request,
@@ -858,14 +860,27 @@ namespace Uviewer.Services
             else
             {
                 var margins = ReaderPageMargins.HorizontalText;
-                float limitedWidth = (float)(_settingsManager.FontSize * 42);
-                float contentWidth = Math.Min(limitedWidth, (float)size.Width - margins.Horizontal);
+                int wrapLength = Math.Clamp(_settingsManager.WrapLength, 10, 120);
+                float limitedWidth = (float)(_settingsManager.FontSize * wrapLength);
+                float availableWidth = (float)size.Width - margins.Horizontal;
+                float contentWidth = Math.Min(limitedWidth, availableWidth);
+
+                // 텍스트 옵션의 "텍스트 영역 위치"를 EPUB 가로쓰기에도 동일하게 적용합니다.
+                // 읽기 열이 페이지보다 좁을 때 남는 공간만큼 열 전체를 이동시킵니다.
+                float spareWidth = Math.Max(0, availableWidth - contentWidth);
+                float contentLeft = margins.Left;
+                contentLeft += _settingsManager.Alignment switch
+                {
+                    TextAlignment.Center => spareWidth / 2,
+                    TextAlignment.Right => spareWidth,
+                    _ => 0
+                };
 
                 HorizontalRenderer.RenderBlocks(
                     ds: ds,
                     blocks: pg.Blocks,
                     textColor: textColor,
-                    marginLeft: margins.Left,
+                    marginLeft: contentLeft,
                     marginTop: margins.Top,
                     maxWidth: contentWidth,
                     baseFontSize: _settingsManager.FontSize,
