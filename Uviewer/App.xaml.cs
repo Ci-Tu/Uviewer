@@ -363,7 +363,8 @@ namespace Uviewer
             try
             {
                 var settings = _appSettingsService.LoadSettings();
-                _allowMultipleInstances = settings.KeepInTray ? false : settings.AllowMultipleInstances;
+                // 트레이에 유지와 다중 실행은 함께 사용할 수 있으므로 서로를 강제로 끄지 않습니다.
+                _allowMultipleInstances = settings.AllowMultipleInstances;
                 _isRegistered = settings.IsRegistered;
             }
             catch { }
@@ -420,15 +421,18 @@ namespace Uviewer
 
         private void StartPipeServer()
         {
-            _pipeCts = new CancellationTokenSource();
+            if (Volatile.Read(ref _pipeCts) != null) return;
+
+            var pipeCts = new CancellationTokenSource();
+            _pipeCts = pipeCts;
             _ = Task.Run(async () =>
             {
-                while (!_pipeCts.Token.IsCancellationRequested)
+                while (!pipeCts.Token.IsCancellationRequested)
                 {
                     try
                     {
                         using var server = new NamedPipeServerStream("UviewerInstancePipe", PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
-                        await server.WaitForConnectionAsync(_pipeCts.Token);
+                        await server.WaitForConnectionAsync(pipeCts.Token);
                         using var reader = new StreamReader(server);
                         var filePath = await reader.ReadLineAsync();
                         
@@ -456,6 +460,42 @@ namespace Uviewer
                     }
                 }
             });
+        }
+
+        private void StopPipeServer()
+        {
+            CancellationTokenSource? pipeCts = Interlocked.Exchange(ref _pipeCts, null);
+            if (pipeCts == null) return;
+
+            try { pipeCts.Cancel(); }
+            catch (ObjectDisposedException) { }
+            finally { pipeCts.Dispose(); }
+        }
+
+        /// <summary>
+        /// 다중 실행 설정에 맞춰 단일 실행 파일 전달용 파이프 서버를 즉시 켜고 끕니다.
+        /// 다중 실행 중에는 새 파일이 기존 창으로 전달되지 않도록 파이프 서버를 중지합니다.
+        /// </summary>
+        public static void SetMultipleInstanceEnabled(bool allowMultipleInstances)
+        {
+            if (Application.Current is App app)
+            {
+                app.ApplyMultipleInstanceMode(allowMultipleInstances);
+            }
+        }
+
+        private void ApplyMultipleInstanceMode(bool allowMultipleInstances)
+        {
+            if (allowMultipleInstances)
+            {
+                StopPipeServer();
+                return;
+            }
+
+            if (_isComActivation) return;
+            if (Volatile.Read(ref _normalShutdownStarted) != 0) return;
+
+            StartPipeServer();
         }
 
         private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)

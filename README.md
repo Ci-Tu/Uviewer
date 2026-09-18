@@ -52,8 +52,7 @@
   - **Unpinned**: All UI elements are hidden. Hover over the top edge to reveal the title bar, toolbar and status bar, or hover over the left edge to reveal the sidebar. UI auto-hides after 1 second when the mouse leaves.
 
 #### ⚙️ Multiple Instances
-- **Allow Multiple Instances**: When enabled, each file opens in a new window instance. When disabled, files open in the already running instance using inter-process communication (NamedPipe).
-- **Keep in System Tray Compatibility**: Multiple instances are disabled automatically while **Keep in System Tray** is enabled, so new files are opened by the running tray instance.
+- **Allow Multiple Instances**: When enabled, each file opens in a new window instance.
 
 #### 🔔 Keep in System Tray
 - **Keep in System Tray**: Enable this option in the Settings menu to keep Uviewer running when the window is closed. The window is hidden in the system tray instead of terminating the process.
@@ -63,11 +62,11 @@
 - **Auto Side-by-Side in Archive**: When enabled, the viewer automatically applies side-by-side (2-page) view for portrait-oriented images (height = width * 1.2~3) when browsing archives and EPUB, provided the window width is at least 1.2 times its height.
 
 #### 🗂️ Explorer Thumbnail Settings
-- **Thumbnail Button Settings**: Left-click the sidebar thumbnail/list toggle button (**Ctrl+3**) to toggle the sidebar between the list view and the expanded thumbnail view (default 760px wide); right-click it to open thumbnail settings. The button is dimmed (disabled) in fullscreen or while UI auto-hide is on.
+- **Thumbnail Button Settings**: Left-click the sidebar thumbnail/list toggle button (**Ctrl+3**) to toggle the sidebar between the list view and the expanded thumbnail view; right-click it to open thumbnail settings.
   - **Thumbnail Size**: Adjust the thumbnail grid size with a slider and preview the result immediately.
   - **Folder Thumbnails**: When enabled, folders show the first image inside the folder as their thumbnail.
-  - **Sidebar Default Width**: Set the sidebar width used in the normal (list) view (200–600px).
-  - **Sidebar Expanded Width**: Set the sidebar width used by **Ctrl+3** / the thumbnail view button (400–1200px).
+  - **Sidebar Default Width**: Set the sidebar width used in the normal (list) view.
+  - **Sidebar Expanded Width**: Set the sidebar width used by **Ctrl+3** / the thumbnail view button.
 
 #### 🎨 Image Sharpening & Upscaling
 - **Advanced Sharpening Control**: Right-click the **Sharpening (S)** button to open the settings flyout.

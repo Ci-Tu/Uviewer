@@ -85,12 +85,24 @@ namespace Uviewer.Services
                     return defaults;
                 }
 
-                return NormalizeSettings(FromDocument(document, defaults));
+                var settings = FromDocument(document, defaults);
+                ApplyMigrations(document, settings);
+                return NormalizeSettings(settings);
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error loading window settings JSON: {ex.Message}");
                 return defaults;
+            }
+        }
+
+        private static void ApplyMigrations(AppSettingsDocument document, AppSettings settings)
+        {
+            // v5 이하에서는 '트레이에 유지'를 켜면 '다중 실행'을 강제로 꺼서 저장했습니다.
+            // 이제 두 기능을 함께 쓸 수 있으므로, 그때 강제로 기록된 값은 사용자 선택이 아니므로 되돌립니다.
+            if (document.Version < AppSettingsDocument.CurrentVersion && settings.KeepInTray)
+            {
+                settings.AllowMultipleInstances = true;
             }
         }
 
@@ -171,10 +183,7 @@ namespace Uviewer.Services
                 settings.ExternalProgramPath = AppSettings.DefaultExternalProgramPath;
             }
 
-            if (settings.KeepInTray)
-            {
-                settings.AllowMultipleInstances = false;
-            }
+            // 트레이에 유지와 다중 실행은 함께 사용할 수 있습니다.
 
             return settings;
         }
@@ -238,7 +247,7 @@ namespace Uviewer.Services
                 App = new AppBehaviorSettings
                 {
                     Theme = (int)settings.Theme,
-                    AllowMultipleInstances = settings.KeepInTray ? false : settings.AllowMultipleInstances,
+                    AllowMultipleInstances = settings.AllowMultipleInstances,
                     KeepInTray = settings.KeepInTray,
                     AlwaysOnTop = settings.IsAlwaysOnTop,
                     Registered = settings.IsRegistered

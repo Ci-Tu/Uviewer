@@ -89,7 +89,6 @@ namespace Uviewer.Controls
             ApplyImageOptionsDataContext();
             HookEvents();
             InitializeToolbarCustomization();
-            UpdateInstanceOptionState();
         }
 
         private static void OnImageOptionsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -335,10 +334,9 @@ namespace Uviewer.Controls
         {
             MatchControlDirectionMenuItem.IsChecked = matchControlDirection;
             KeepInTrayMenuItem.IsChecked = keepInTray;
-            AllowMultipleInstancesMenuItem.IsChecked = keepInTray ? false : allowMultipleInstances;
+            AllowMultipleInstancesMenuItem.IsChecked = allowMultipleInstances;
             AutoDoublePageForArchiveMenuItem.IsChecked = autoDoublePageForArchive;
             AlwaysOnTopButton.IsChecked = alwaysOnTop;
-            UpdateInstanceOptionState();
         }
 
         public void SetMatchControlDirection(bool value) => MatchControlDirectionMenuItem.IsChecked = value;
@@ -347,22 +345,11 @@ namespace Uviewer.Controls
             AllowMultipleInstancesMenuItem.IsChecked = value;
         }
 
-        public void SetKeepInTray(bool value)
-        {
-            KeepInTrayMenuItem.IsChecked = value;
-            UpdateInstanceOptionState();
-        }
+        // 트레이에 유지와 다중 실행은 함께 사용할 수 있습니다.
+        public void SetKeepInTray(bool value) => KeepInTrayMenuItem.IsChecked = value;
 
         public void SetAutoDoublePageForArchive(bool value) => AutoDoublePageForArchiveMenuItem.IsChecked = value;
         public void SetAlwaysOnTopState(bool value) => AlwaysOnTopButton.IsChecked = value;
-
-        private void UpdateInstanceOptionState()
-        {
-            if (KeepInTrayMenuItem.IsChecked == true)
-            {
-                AllowMultipleInstancesMenuItem.IsChecked = false;
-            }
-        }
 
         private string _externalProgramPath = "";
 

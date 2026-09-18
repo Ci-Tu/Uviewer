@@ -41,7 +41,8 @@ namespace Uviewer.Services
             _host.SetTheme(settings.Theme);
             _host.MatchControlDirection = settings.MatchControlDirection;
             _host.KeepInTray = settings.KeepInTray;
-            _host.AllowMultipleInstances = settings.KeepInTray ? false : settings.AllowMultipleInstances;
+            // 트레이에 유지와 다중 실행은 함께 사용할 수 있으므로 강제로 끄지 않습니다.
+            _host.AllowMultipleInstances = settings.AllowMultipleInstances;
             windowState.IsSidebarVisible = settings.IsSidebarVisible;
             windowState.IsPinned = settings.IsPinned;
             windowState.IsAlwaysOnTop = settings.IsAlwaysOnTop;
@@ -91,7 +92,7 @@ namespace Uviewer.Services
                 NextImageOnRight = _host.NextImageOnRight,
                 Theme = _host.CurrentTheme,
                 MatchControlDirection = _host.MatchControlDirection,
-                AllowMultipleInstances = _host.KeepInTray ? false : _host.AllowMultipleInstances,
+                AllowMultipleInstances = _host.AllowMultipleInstances,
                 KeepInTray = _host.KeepInTray,
                 IsSidebarVisible = windowState.IsSidebarVisible,
                 IsPinned = windowState.IsPinned,

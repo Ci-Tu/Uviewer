@@ -39,7 +39,7 @@ namespace Uviewer.Models
 
     public class AppSettingsDocument
     {
-        public const int CurrentVersion = 5;
+        public const int CurrentVersion = 6;
 
         public int Version { get; set; } = CurrentVersion;
         public AppWindowSettings Window { get; set; } = new();

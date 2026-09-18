@@ -49,20 +49,13 @@ namespace Uviewer
             public bool AllowMultipleInstances
             {
                 get => _window._allowMultipleInstances;
-                set => _window._allowMultipleInstances = _window._keepInTray ? false : value;
+                set => _window._allowMultipleInstances = value;
             }
 
             public bool KeepInTray
             {
                 get => _window._keepInTray;
-                set
-                {
-                    _window._keepInTray = value;
-                    if (value)
-                    {
-                        _window._allowMultipleInstances = false;
-                    }
-                }
+                set => _window._keepInTray = value;
             }
 
             public bool AutoDoublePageForArchive

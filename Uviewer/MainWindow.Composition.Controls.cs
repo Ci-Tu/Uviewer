@@ -31,35 +31,31 @@ namespace Uviewer
                             },
                             SetAllowMultipleInstances = isChecked =>
                             {
+                                bool wasEnabled = window._allowMultipleInstances;
                                 window._allowMultipleInstances = isChecked;
-                                if (isChecked && window._keepInTray)
+                                window.MainToolbar.SetAllowMultipleInstances(isChecked);
+
+                                // 파이프 서버(단일 실행 파일 전달)를 현재 설정에 맞게 즉시 동기화합니다.
+                                App.SetMultipleInstanceEnabled(isChecked);
+
+                                // 다중 실행을 해제하면 현재 창을 제외한 다른 창은 닫습니다.
+                                if (!isChecked && wasEnabled)
                                 {
-                                    window._keepInTray = false;
-                                    window.MainToolbar.SetKeepInTray(false);
-                                    window.UpdateTrayIconVisibility();
+                                    window.CloseOtherInstances();
                                 }
 
-                                window.MainToolbar.SetAllowMultipleInstances(window._allowMultipleInstances);
+                                window.RefreshMultiInstanceState();
+                                window.UpdateTrayIconVisibility();
                                 window._windowSettingsCoordinator.SaveWindowSettings();
                             },
                             SetKeepInTray = isChecked =>
                             {
-                                if (isChecked)
-                                {
-                                    // 취소 시 복구할 수 있도록 이전 다중실행 상태를 기억해 둡니다.
-                                    window._previousAllowMultipleInstances = window._allowMultipleInstances;
-                                    window._allowMultipleInstances = false;
-                                }
-
+                                // 트레이에 유지와 다중 실행은 함께 사용할 수 있습니다.
                                 window._keepInTray = isChecked;
                                 window.MainToolbar.SetKeepInTray(isChecked);
-                                window.MainToolbar.SetAllowMultipleInstances(window._allowMultipleInstances);
+                                window.RefreshMultiInstanceState();
                                 window.UpdateTrayIconVisibility();
                                 window._windowSettingsCoordinator.SaveWindowSettings();
-                                if (isChecked && window._previousAllowMultipleInstances)
-                                {
-                                    _ = window.ShowKeepInTrayRestartDialogAsync();
-                                }
                             },
                             SetAutoDoublePageForArchive = isChecked =>
                             {

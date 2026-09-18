@@ -73,6 +73,7 @@ namespace Uviewer
                     var appWindow = window.AppWindow;
                     window._windowSettingsCoordinator = new WindowSettingsCoordinator(new WindowSettingsHostAdapter(window), window._appSettingsService);
                     window.InitializeTrayIcon();
+                    window.InitializeMultiInstanceCoordinator();
                     appWindow.Closing += window.AppWindow_Closing;
                 }
 
@@ -209,6 +210,7 @@ namespace Uviewer
                         window._hdrSwapChainRenderer.Dispose();
                         window._windowShellController.Dispose();
                         window.DisposeTrayIcon();
+                        window.DisposeMultiInstanceCoordinator();
                         App.NotifyWindowClosing();
                         window._isWindowClosing = true;
                         bool wasPdfOpen = window._pdfDocumentController.HasOpenDocument;

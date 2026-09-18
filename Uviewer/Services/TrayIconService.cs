@@ -1,5 +1,6 @@
 using Microsoft.UI.Dispatching;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -25,11 +26,15 @@ namespace Uviewer.Services
         private const uint LrLoadFromFile = 0x00000010;
         private const uint LrDefaultSize = 0x00000040;
         private const uint MfString = 0x00000000;
+        private const uint MfChecked = 0x00000008;
         private const uint MfSeparator = 0x00000800;
         private const uint TpmRightButton = 0x0002;
         private const uint TpmReturnCommand = 0x0100;
         private const uint OpenCommandId = 1;
         private const uint ExitCommandId = 2;
+        private const uint WindowCommandIdStart = 0x1000;
+        private const int WindowMenuItemMaxLength = 80;
+        private const int MaxWindowMenuItems = 40;
         private const nuint SubclassId = 0x55564945;
 
         private readonly IntPtr _windowHandle;
@@ -40,6 +45,8 @@ namespace Uviewer.Services
         private readonly Action _exitRequested;
         private readonly Action _contextMenuOpening;
         private readonly Action _contextMenuClosed;
+        private readonly Func<IReadOnlyList<TrayWindowItem>> _windowItemsProvider;
+        private readonly Action<long> _windowSelected;
         private readonly SubclassProc _subclassProc;
         private readonly uint _taskbarCreatedMessage;
         private IntPtr _iconHandle;
@@ -56,7 +63,9 @@ namespace Uviewer.Services
             Action openRequested,
             Action exitRequested,
             Action contextMenuOpening,
-            Action contextMenuClosed)
+            Action contextMenuClosed,
+            Func<IReadOnlyList<TrayWindowItem>>? windowItemsProvider = null,
+            Action<long>? windowSelected = null)
         {
             _windowHandle = windowHandle;
             _dispatcherQueue = dispatcherQueue ?? throw new ArgumentNullException(nameof(dispatcherQueue));
@@ -66,6 +75,8 @@ namespace Uviewer.Services
             _exitRequested = exitRequested ?? throw new ArgumentNullException(nameof(exitRequested));
             _contextMenuOpening = contextMenuOpening ?? throw new ArgumentNullException(nameof(contextMenuOpening));
             _contextMenuClosed = contextMenuClosed ?? throw new ArgumentNullException(nameof(contextMenuClosed));
+            _windowItemsProvider = windowItemsProvider ?? (() => Array.Empty<TrayWindowItem>());
+            _windowSelected = windowSelected ?? (_ => { });
             _subclassProc = WindowSubclassProc;
             _taskbarCreatedMessage = RegisterWindowMessage("TaskbarCreated");
 
@@ -216,8 +227,13 @@ namespace Uviewer.Services
 
             try
             {
+                var windowCommands = new Dictionary<uint, TrayWindowItem>();
+
                 AppendMenu(menu, MfString, OpenCommandId, _openText());
                 AppendMenu(menu, MfSeparator, 0, null);
+
+                AppendWindowItems(menu, windowCommands);
+
                 AppendMenu(menu, MfString, ExitCommandId, _exitText());
 
                 if (!GetCursorPos(out Point cursor)) return;
@@ -232,7 +248,7 @@ namespace Uviewer.Services
                     _windowHandle,
                     IntPtr.Zero);
                 PostMessage(_windowHandle, WmNull, UIntPtr.Zero, IntPtr.Zero);
-                HandleCommand(commandId);
+                HandleCommand(commandId, windowCommands);
             }
             finally
             {
@@ -241,7 +257,50 @@ namespace Uviewer.Services
             }
         }
 
-        private void HandleCommand(uint commandId)
+        private void AppendWindowItems(IntPtr menu, Dictionary<uint, TrayWindowItem> windowCommands)
+        {
+            IReadOnlyList<TrayWindowItem>? items = null;
+            try
+            {
+                items = _windowItemsProvider();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error building tray window items: {ex.Message}");
+            }
+
+            if (items == null || items.Count == 0) return;
+
+            int count = Math.Min(items.Count, MaxWindowMenuItems);
+            for (int index = 0; index < count; index++)
+            {
+                TrayWindowItem item = items[index];
+                uint flags = item.IsCurrent ? MfString | MfChecked : MfString;
+                uint commandId = WindowCommandIdStart + (uint)index;
+                AppendMenu(menu, flags, commandId, FormatMenuItemText(item.Title));
+                windowCommands[commandId] = item;
+            }
+
+            AppendMenu(menu, MfSeparator, 0, null);
+        }
+
+        private static string FormatMenuItemText(string? title)
+        {
+            // '&'는 Win32 메뉴에서 단축키 표시로 해석되므로 이스케이프합니다.
+            string text = string.IsNullOrWhiteSpace(title)
+                ? " "
+                : title.Replace("&", "&&").Trim();
+
+            if (text.Length == 0) text = " ";
+            if (text.Length > WindowMenuItemMaxLength)
+            {
+                text = text.Substring(0, WindowMenuItemMaxLength - 1) + "\u2026";
+            }
+
+            return text;
+        }
+
+        private void HandleCommand(uint commandId, IReadOnlyDictionary<uint, TrayWindowItem> windowCommands)
         {
             if (commandId == OpenCommandId)
             {
@@ -250,6 +309,11 @@ namespace Uviewer.Services
             else if (commandId == ExitCommandId)
             {
                 QueueAction(_exitRequested);
+            }
+            else if (windowCommands.TryGetValue(commandId, out TrayWindowItem? item) && item != null)
+            {
+                long targetHandle = item.WindowHandle;
+                QueueAction(() => _windowSelected(targetHandle));
             }
         }
 
