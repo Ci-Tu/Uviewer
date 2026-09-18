@@ -32,7 +32,6 @@ namespace Uviewer.Services
         private readonly Action _saveWindowSettings;
         private readonly Action _invalidateThemeTargets;
         private readonly Action<bool> _setExplorerGridView;
-        private readonly Action<bool> _setSidebarWidthToggleEnabled;
         private Point? _lastCursorPosition;
         private long _cursorLastMovedAt;
         private bool _cursorHidden;
@@ -59,8 +58,7 @@ namespace Uviewer.Services
             FullscreenOverlayManager overlayManager,
             Action saveWindowSettings,
             Action invalidateThemeTargets,
-            Action<bool> setExplorerGridView,
-            Action<bool> setSidebarWidthToggleEnabled)
+            Action<bool> setExplorerGridView)
         {
             _window = window;
             _rootGrid = rootGrid;
@@ -77,7 +75,6 @@ namespace Uviewer.Services
             _saveWindowSettings = saveWindowSettings;
             _invalidateThemeTargets = invalidateThemeTargets;
             _setExplorerGridView = setExplorerGridView;
-            _setSidebarWidthToggleEnabled = setSidebarWidthToggleEnabled;
             _windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(window);
             _subclassProc = WindowSubclassProc;
             _hiddenInputCursor = TransparentInputCursorFactory.TryCreate();
@@ -166,8 +163,6 @@ namespace Uviewer.Services
             {
                 _sidebarColumn.Width = new GridLength(_windowState.SidebarDefaultWidth);
             }
-
-            UpdateSidebarWidthToggleEnabled();
         }
 
         internal void HideToolbarUI()
@@ -225,34 +220,24 @@ namespace Uviewer.Services
             _windowState.IsFullscreen ||
             _window.AppWindow?.Presenter?.Kind == AppWindowPresenterKind.FullScreen;
 
-        // Ctrl+3 and the sidebar view button are only available in a pinned, non-fullscreen window.
-        private bool IsSidebarWidthToggleAvailable => !IsFullscreenActive && _windowState.IsPinned;
-
-        private void UpdateSidebarWidthToggleEnabled() =>
-            _setSidebarWidthToggleEnabled(IsSidebarWidthToggleAvailable);
-
+        // Thumbnail view toggle (Ctrl+3 and the sidebar view button). Available in every
+        // shell mode, including fullscreen and the auto-hide (unpinned) overlay, by
+        // revealing the sidebar on demand.
         internal void ToggleSidebarWidth()
         {
-            // Ignored in fullscreen and while the UI auto-hide (unpinned) mode is active.
-            if (!IsSidebarWidthToggleAvailable)
-            {
-                return;
-            }
-
             _isSidebarWidthExpanded = !_isSidebarWidthExpanded;
             _windowState.SidebarWidth = _isSidebarWidthExpanded
                 ? _windowState.SidebarExpandedWidth
                 : _windowState.SidebarDefaultWidth;
             _setExplorerGridView(_isSidebarWidthExpanded);
 
-            if (!_windowState.IsSidebarVisible)
-            {
-                _windowState.IsSidebarVisible = true;
-                _toolbar.SetSidebarState(true);
-                _sidebarGrid.Visibility = Visibility.Visible;
-                if (_splitterGrid != null) _splitterGrid.Visibility = Visibility.Visible;
-            }
-
+            // Force the sidebar into view so the toggle is observable in fullscreen and
+            // while the auto-hide overlay is active.
+            _windowState.IsSidebarVisible = true;
+            _toolbar.SetSidebarState(true);
+            _overlayManager.StopSidebarTimer();
+            _sidebarGrid.Visibility = Visibility.Visible;
+            if (_splitterGrid != null) _splitterGrid.Visibility = Visibility.Visible;
             _sidebarColumn.Width = new GridLength(_windowState.SidebarWidth);
 
             _saveWindowSettings();
@@ -360,8 +345,6 @@ namespace Uviewer.Services
             {
                 StopCursorActivityTracking();
             }
-
-            UpdateSidebarWidthToggleEnabled();
         }
 
         internal void RefreshPointerCursor()
@@ -749,7 +732,6 @@ namespace Uviewer.Services
                 _sidebarColumn.Width = new GridLength(0);
             }
 
-            UpdateSidebarWidthToggleEnabled();
             _saveWindowSettings();
         }
 

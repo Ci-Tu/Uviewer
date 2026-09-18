@@ -62,8 +62,7 @@ namespace Uviewer
                         window._overlayManager,
                         () => window._windowSettingsCoordinator.SaveWindowSettings(),
                         window.InvalidateThemeTargets,
-                        isGrid => window._explorerSidebarController.SetViewMode(isGrid),
-                        isEnabled => window._explorerSidebarController?.SetToggleViewButtonEnabled(isEnabled));
+                        isGrid => window._explorerSidebarController.SetViewMode(isGrid));
 
                     window._overlayManager.HideToolbarRequested += (s, e) => window._windowShellController.HideToolbarUI();
                     window._overlayManager.HideSidebarRequested += (s, e) => window._windowShellController.HideSidebarUI();

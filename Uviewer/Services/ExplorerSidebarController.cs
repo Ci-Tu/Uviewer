@@ -278,13 +278,6 @@ namespace Uviewer.Services
             UpdateExplorerView();
         }
 
-        public void SetToggleViewButtonEnabled(bool isEnabled)
-        {
-            var button = _host.ToggleViewButton;
-            button.IsEnabled = isEnabled;
-            button.Opacity = isEnabled ? 1.0 : 0.4;
-        }
-
         private void UpdateExplorerView()
         {
             if (_host.IsExplorerGrid)
