@@ -51,6 +51,8 @@ namespace Uviewer.Services
         private readonly uint _taskbarCreatedMessage;
         private IntPtr _iconHandle;
         private bool _isVisible;
+        private bool _isVersion4;
+        private bool _isContextMenuOpen;
         private bool _disposed;
 
         public bool IsVisible => _isVisible;
@@ -125,7 +127,8 @@ namespace Uviewer.Services
             if (!Shell_NotifyIcon(NimAdd, ref data)) return false;
 
             data.uTimeoutOrVersion = NotifyIconVersion4;
-            Shell_NotifyIcon(NimSetVersion, ref data);
+            // 버전 4가 적용되면 우클릭이 WM_CONTEXTMENU로 전달됩니다(구버전은 WM_RBUTTONUP).
+            _isVersion4 = Shell_NotifyIcon(NimSetVersion, ref data);
             return true;
         }
 
@@ -202,11 +205,18 @@ namespace Uviewer.Services
             else if (message == TrayCallbackMessage)
             {
                 uint mouseMessage = unchecked((uint)lParam.ToInt64()) & 0xFFFF;
+
+                // NOTIFYICON_VERSION_4에서는 우클릭이 WM_CONTEXTMENU로, 구버전에서는
+                // WM_RBUTTONUP으로 전달됩니다. 두 메시지를 모두 처리하면 우클릭 한 번에
+                // 메뉴가 두 번 표시되므로(위 메뉴를 닫으면 아래 메뉴가 드러남) 현재
+                // 적용된 버전에 해당하는 메시지만 처리합니다.
+                uint contextMenuMessage = _isVersion4 ? WmContextMenu : WmRButtonUp;
+
                 if (mouseMessage == WmLButtonDoubleClick)
                 {
                     QueueAction(_openRequested);
                 }
-                else if (mouseMessage == WmRButtonUp || mouseMessage == WmContextMenu)
+                else if (mouseMessage == contextMenuMessage)
                 {
                     ShowContextMenu();
                 }
@@ -217,11 +227,16 @@ namespace Uviewer.Services
 
         private void ShowContextMenu()
         {
+            // 우클릭 알림이 중복 전달되어도 메뉴를 두 번 표시하지 않습니다.
+            if (_isContextMenuOpen) return;
+            _isContextMenuOpen = true;
+
             _contextMenuOpening();
             IntPtr menu = CreatePopupMenu();
             if (menu == IntPtr.Zero)
             {
                 _contextMenuClosed();
+                _isContextMenuOpen = false;
                 return;
             }
 
@@ -254,6 +269,7 @@ namespace Uviewer.Services
             {
                 DestroyMenu(menu);
                 _contextMenuClosed();
+                _isContextMenuOpen = false;
             }
         }
 
