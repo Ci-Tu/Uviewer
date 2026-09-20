@@ -273,9 +273,14 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBox x:Name="ExplorerFilterTextBox" Grid.ColumnSpan="2" MinWidth="0"
+                                 Padding="32,5,6,5"
                                  PlaceholderText="{x:Bind app:Strings.ExplorerFilterPlaceholder}"
                                  AutomationProperties.Name="{x:Bind app:Strings.ExplorerFilterPlaceholder}"
                                  ToolTipService.ToolTip="{x:Bind app:Strings.ExplorerFilterPlaceholder}"/>
+                        <FontIcon Grid.Row="0" Glyph="&#xE721;" FontSize="14"
+                                  HorizontalAlignment="Left" VerticalAlignment="Center"
+                                  Margin="11,0,0,0" IsHitTestVisible="False"
+                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                         <ComboBox x:Name="ExplorerFilterKindComboBox" Grid.Row="1" SelectedIndex="0"
                                   HorizontalAlignment="Stretch" MinWidth="0"
                                   AutomationProperties.Name="{x:Bind app:Strings.ExplorerFilterKindLabel}">
