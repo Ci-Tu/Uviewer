@@ -405,6 +405,8 @@ namespace Uviewer.Controls
             return true;
         }
 
+        internal bool IsToolbarCustomizationDialogOpen => _toolbarCustomizationDialog != null;
+
         private async Task ShowToolbarCustomizationDialogAsync()
         {
             if (_toolbarCustomizationDialog != null || XamlRoot == null) return;

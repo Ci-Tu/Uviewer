@@ -19,6 +19,8 @@ namespace Uviewer.Services
         bool HasPdfDocument { get; }
         bool IsAboutDialogActive { get; }
         bool IsDeleteDialogOpen { get; }
+        bool IsTextOptionsDialogOpen { get; }
+        bool IsToolbarCustomizationDialogOpen { get; }
         bool IsSearchOverlayOpen { get; }
         bool CanSearchCurrentDocument { get; }
 

@@ -800,14 +800,25 @@ namespace Uviewer
 
         // --- Toolbar Handlers ---
 
+        private bool _isTextOptionsDialogOpen;
+        internal bool IsTextOptionsDialogOpen => _isTextOptionsDialogOpen;
+
         internal async Task ShowTextOptionsAsync()
         {
-            var result = await _textDialogService.ShowTextOptionsAsync(_settingsManager.WrapLength, _settingsManager.Alignment);
-            if (result is not { } options) return;
-            _settingsManager.WrapLength = options.wrapLength;
-            _settingsManager.Alignment = options.alignment;
-            SaveTextSettings();
-            await RefreshTextDisplay();
+            _isTextOptionsDialogOpen = true;
+            try
+            {
+                var result = await _textDialogService.ShowTextOptionsAsync(_settingsManager.WrapLength, _settingsManager.Alignment);
+                if (result is not { } options) return;
+                _settingsManager.WrapLength = options.wrapLength;
+                _settingsManager.Alignment = options.alignment;
+                SaveTextSettings();
+                await RefreshTextDisplay();
+            }
+            finally
+            {
+                _isTextOptionsDialogOpen = false;
+            }
         }
 
         internal void ColorsMenu_Click(object sender, RoutedEventArgs e)

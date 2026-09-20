@@ -106,6 +106,8 @@ namespace Uviewer.Services
                 HasPdfDocument = actions.HasPdfDocument,
                 IsAboutDialogActive = actions.IsAboutDialogActive,
                 IsDeleteDialogOpen = actions.IsDeleteDialogOpen,
+                IsTextOptionsDialogOpen = actions.IsTextOptionsDialogOpen,
+                IsToolbarCustomizationDialogOpen = actions.IsToolbarCustomizationDialogOpen,
                 IsSearchOverlayOpen = actions.IsSearchOverlayOpen,
                 CanSearchCurrentDocument = actions.CanSearchCurrentDocument
             };

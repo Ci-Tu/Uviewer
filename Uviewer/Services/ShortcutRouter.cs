@@ -18,6 +18,14 @@ namespace Uviewer.Services
                 return false;
             }
 
+            if (input.Key == VirtualKey.Escape &&
+                (context.IsTextOptionsDialogOpen || context.IsToolbarCustomizationDialogOpen))
+            {
+                // 텍스트 옵션/툴바 사용자 지정 대화상자가 열려 있으면 앱을 종료하지 않고
+                // 대화상자가 Esc를 직접 처리해 닫히도록 라우팅하지 않습니다.
+                return false;
+            }
+
             if (input.CtrlPressed && input.Key == VirtualKey.F && context.CanSearchCurrentDocument)
             {
                 return Set(out route, AppCommand.ShowSearchOverlay);

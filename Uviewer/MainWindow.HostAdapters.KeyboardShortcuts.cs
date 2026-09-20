@@ -162,6 +162,8 @@ namespace Uviewer
             public bool HasPdfDocument => _window._currentPdfDocument != null;
             public bool IsAboutDialogActive => _window._aboutDialog != null;
             public bool IsDeleteDialogOpen => _window._explorerItemOperationController.IsDeleteDialogOpen;
+            public bool IsTextOptionsDialogOpen => _window._documentReaderController.IsTextOptionsDialogOpen;
+            public bool IsToolbarCustomizationDialogOpen => _window.MainToolbar.IsToolbarCustomizationDialogOpen;
             public bool IsSearchOverlayOpen => _window._searchOverlayService?.IsOpen == true;
             public bool CanSearchCurrentDocument => _window._searchController.CanSearchCurrentDocument;
 
