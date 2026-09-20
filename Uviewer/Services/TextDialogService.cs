@@ -37,9 +37,9 @@ namespace Uviewer.Services
         public async Task<(int wrapLength, TextAlignment alignment)?> ShowTextOptionsAsync(int wrapLength, TextAlignment alignment)
         {
             var slider = new Slider { Minimum = 10, Maximum = 120, StepFrequency = 1, Value = wrapLength };
-            var valueLabel = new TextBlock { Text = wrapLength.ToString() };
-            slider.Header = Strings.TextWrapLength;
-            slider.ValueChanged += (_, e) => valueLabel.Text = ((int)e.NewValue).ToString();
+            var headerLabel = new TextBlock { Text = $"{Strings.TextWrapLength}: {wrapLength}" };
+            slider.Header = headerLabel;
+            slider.ValueChanged += (_, e) => headerLabel.Text = $"{Strings.TextWrapLength}: {(int)e.NewValue}";
             var alignmentPicker = new ComboBox
             {
                 Height = 32,
@@ -55,7 +55,6 @@ namespace Uviewer.Services
             var panel = new StackPanel { Spacing = 12, Width = 360 };
             panel.Children.Add(new TextBlock { Text = Strings.TextOptionsHint, TextWrapping = TextWrapping.Wrap, MaxWidth = 360 });
             panel.Children.Add(slider);
-            panel.Children.Add(valueLabel);
             panel.Children.Add(alignmentPanel);
             var dialog = new ContentDialog
             {
