@@ -274,7 +274,7 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0" Text="{x:Bind app:Strings.ExplorerFilterFolders}"
+                            <TextBlock x:Name="FolderNavigationTitleText" Grid.Row="0" Text="{x:Bind app:Strings.ExplorerFilterFolders}"
                                        FontWeight="SemiBold" Margin="14,12,8,8"/>
                             <ListView x:Name="FolderNavigationListView" Grid.Row="1"
                                       SelectionMode="Single" IsItemClickEnabled="True">

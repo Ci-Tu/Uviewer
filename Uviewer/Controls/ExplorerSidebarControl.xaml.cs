@@ -115,6 +115,8 @@ namespace Uviewer.Controls
             ThumbnailSizeSlider.FontFamily = fontFamily;
             FolderThumbnailsCheckBox.FontFamily = fontFamily;
             RecursiveImageBrowsingCheckBox.FontFamily = fontFamily;
+            FolderNavigationTitleText.FontFamily = fontFamily;
+            FolderNavigationListView.FontFamily = fontFamily;
             SidebarDefaultWidthLabel.FontFamily = fontFamily;
             SidebarDefaultWidthValueText.FontFamily = fontFamily;
             SidebarDefaultWidthSlider.FontFamily = fontFamily;
