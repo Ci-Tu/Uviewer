@@ -284,6 +284,8 @@ namespace Uviewer.Controls
                 nameof(ThumbnailSizeValueText) => ThumbnailSizeValueText,
                 nameof(ThumbnailSizeSlider) => ThumbnailSizeSlider,
                 nameof(FolderThumbnailsCheckBox) => FolderThumbnailsCheckBox,
+                nameof(RecursiveImageBrowsingCheckBox) => RecursiveImageBrowsingCheckBox,
+                nameof(FolderNavigationListView) => FolderNavigationListView,
                 nameof(SidebarDefaultWidthLabel) => SidebarDefaultWidthLabel,
                 nameof(SidebarDefaultWidthValueText) => SidebarDefaultWidthValueText,
                 nameof(SidebarDefaultWidthSlider) => SidebarDefaultWidthSlider,
