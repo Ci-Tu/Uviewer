@@ -71,6 +71,7 @@ namespace Uviewer
             public Button SortByDateButton => _window.SortByDateButton;
             public FontIcon SortIcon => _window.SortIcon;
             public Slider ThumbnailSizeSlider => _window.ThumbnailSizeSlider;
+            public Slider ImageManagerThumbnailSlider => _window.ImageManagerThumbnailSlider;
             public TextBlock ThumbnailSizeValueText => _window.ThumbnailSizeValueText;
             public CheckBox FolderThumbnailsCheckBox => _window.FolderThumbnailsCheckBox;
             public CheckBox RecursiveImageBrowsingCheckBox => _window.RecursiveImageBrowsingCheckBox;

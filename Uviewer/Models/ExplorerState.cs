@@ -18,6 +18,7 @@ namespace Uviewer.Models
         public string? CurrentPath { get; set; }
         public ObservableCollection<FileItem> Items { get; } = new();
         public ObservableCollection<FileItem> FolderItems { get; } = new();
+        public ObservableCollection<FileItem> VisibleImageItems { get; } = new();
         public IReadOnlyList<FileItem> AllItems => _allItems;
         public bool IsGridView { get; set; }
         public ExplorerSortMode SortMode { get; set; } = ExplorerSortMode.Name;
@@ -97,6 +98,7 @@ namespace Uviewer.Models
                 if (!MatchesFilter(item)) continue;
 
                 Items.Add(item);
+                if (item.IsImage) VisibleImageItems.Add(item);
                 added = true;
             }
 
@@ -112,19 +114,24 @@ namespace Uviewer.Models
         private void ApplyFilter()
         {
             Items.Clear();
+            VisibleImageItems.Clear();
 
             var listedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var item in _allItems)
             {
                 if (!string.IsNullOrEmpty(item.FullPath)) listedPaths.Add(item.FullPath);
-                if (MatchesFilter(item)) Items.Add(item);
+                if (!MatchesFilter(item)) continue;
+                Items.Add(item);
+                if (item.IsImage) VisibleImageItems.Add(item);
             }
 
             foreach (var item in _descendantItems)
             {
                 // 현재 폴더 목록에 이미 표시된 항목은 중복 추가하지 않습니다.
                 if (!string.IsNullOrEmpty(item.FullPath) && !listedPaths.Add(item.FullPath)) continue;
-                if (MatchesFilter(item)) Items.Add(item);
+                if (!MatchesFilter(item)) continue;
+                Items.Add(item);
+                if (item.IsImage) VisibleImageItems.Add(item);
             }
 
             ItemsChanged?.Invoke(this, EventArgs.Empty);

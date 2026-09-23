@@ -19,8 +19,10 @@ namespace Uviewer.Services
         public Slider ThumbnailSizeSlider { get; init; } = null!;
         public CheckBox FolderThumbnailsCheckBox { get; init; } = null!;
         public CheckBox RecursiveImageBrowsingCheckBox { get; init; } = null!;
-        public ListView FolderNavigationListView { get; init; } = null!;
-        public ObservableCollection<Models.FileItem> FolderNavigationItems { get; init; } = null!;
+        public TreeView FolderNavigationTree { get; init; } = null!;
+        public Slider ImageManagerThumbnailSlider { get; init; } = null!;
+        public GridView ImageManagerGridView { get; init; } = null!;
+        public ObservableCollection<Models.FileItem> ImageManagerItems { get; init; } = null!;
         public Slider SidebarDefaultWidthSlider { get; init; } = null!;
         public Slider SidebarExpandedWidthSlider { get; init; } = null!;
         public PathBreadcrumbControl CurrentPathBreadcrumb { get; init; } = null!;
@@ -80,7 +82,7 @@ namespace Uviewer.Services
             _epubReader = epubReader ?? throw new ArgumentNullException(nameof(epubReader));
             _sidebar = sidebar ?? throw new ArgumentNullException(nameof(sidebar));
             _handlers = handlers ?? throw new ArgumentNullException(nameof(handlers));
-            _sidebar.FolderNavigationListView.ItemsSource = _sidebar.FolderNavigationItems;
+            _sidebar.ImageManagerGridView.ItemsSource = _sidebar.ImageManagerItems;
 
             HookImageViewerEvents();
             HookTextReaderEvents();
@@ -162,6 +164,7 @@ namespace Uviewer.Services
 
             _sidebar.ToggleViewButton.Click += (_, _) => _handlers.ToggleSidebarWidth();
             _sidebar.ThumbnailSizeSlider.ValueChanged += (_, e) => explorer.HandleThumbnailSizeChanged(e.NewValue);
+            _sidebar.ImageManagerThumbnailSlider.ValueChanged += (_, e) => explorer.HandleThumbnailSizeChanged(e.NewValue);
             _sidebar.SidebarDefaultWidthSlider.ValueChanged += (_, e) => explorer.HandleSidebarDefaultWidthChanged(e.NewValue);
             _sidebar.SidebarExpandedWidthSlider.ValueChanged += (_, e) => explorer.HandleSidebarExpandedWidthChanged(e.NewValue);
             _sidebar.FolderThumbnailsCheckBox.Checked += (_, _) =>
@@ -205,7 +208,15 @@ namespace Uviewer.Services
             };
             _sidebar.FileListView.ItemClick += (_, e) => explorer.HandleItemClick(e.ClickedItem as Models.FileItem);
             _sidebar.FileGridView.ItemClick += (_, e) => explorer.HandleItemClick(e.ClickedItem as Models.FileItem);
-            _sidebar.FolderNavigationListView.ItemClick += (_, e) => explorer.HandleItemClick(e.ClickedItem as Models.FileItem);
+            _sidebar.ExplorerSidebar.FolderTreeNavigationRequested += (_, path) => explorer.LoadFolder(path);
+            _sidebar.ImageManagerGridView.ContainerContentChanging += (_, e) =>
+            {
+                if (!e.InRecycleQueue && e.Item is Models.FileItem item)
+                {
+                    explorer.EnsureVisibleThumbnail(item);
+                }
+            };
+            _sidebar.ImageManagerGridView.ItemClick += (_, e) => explorer.HandleItemClick(e.ClickedItem as Models.FileItem);
             _sidebar.FileListView.PreviewKeyDown += (_, e) => explorer.HandleListPreviewKeyDown(e);
             _sidebar.FileGridView.PreviewKeyDown += (_, e) => explorer.HandleGridPreviewKeyDown(e);
             _sidebar.FileListView.RightTapped += (_, e) => explorer.HandleRightTapped(e);

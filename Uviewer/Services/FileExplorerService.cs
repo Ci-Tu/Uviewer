@@ -32,6 +32,41 @@ namespace Uviewer.Services
         public static bool IsComputerRoot(string? path) =>
             string.Equals(path, ComputerRootPath, StringComparison.OrdinalIgnoreCase);
 
+        public static List<FileItem> GetDriveRootItems(CancellationToken token = default) =>
+            GetDriveItems(token);
+
+        public static Task<List<FileItem>> GetChildFolderItemsAsync(string parentPath, CancellationToken token = default)
+        {
+            return Task.Run(() =>
+            {
+                var folders = new List<FileItem>();
+                var options = new EnumerationOptions
+                {
+                    RecurseSubdirectories = false,
+                    IgnoreInaccessible = true,
+                    ReturnSpecialDirectories = false,
+                    AttributesToSkip = FileAttributes.ReparsePoint
+                };
+
+                try
+                {
+                    foreach (var folderPath in Directory.EnumerateDirectories(parentPath, "*", options))
+                    {
+                        token.ThrowIfCancellationRequested();
+                        var name = Path.GetFileName(folderPath);
+                        if (name.StartsWith(".", StringComparison.Ordinal)) continue;
+                        folders.Add(new FileItem { Name = name, FullPath = folderPath, IsDirectory = true });
+                    }
+                }
+                catch (UnauthorizedAccessException) { }
+                catch (IOException) { }
+                catch (System.Security.SecurityException) { }
+
+                folders.Sort((left, right) => NaturalSortComparer.Default.Compare(left.Name, right.Name));
+                return folders;
+            }, token);
+        }
+
         #region Existing Extension Helpers
         public static readonly string[] SupportedImageExtensions = { ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".webp", ".avif", ".jxl", ".ico", ".tiff", ".tif" };
         public static readonly string[] SupportedTextExtensions = { ".txt", ".log", ".json", ".toml", ".csv", ".html", ".htm", ".md", ".xml" };

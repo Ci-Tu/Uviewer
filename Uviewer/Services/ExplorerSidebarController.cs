@@ -47,6 +47,7 @@ namespace Uviewer.Services
         TextBlock ThumbnailSizeValueText { get; }
         CheckBox FolderThumbnailsCheckBox { get; }
         CheckBox RecursiveImageBrowsingCheckBox { get; }
+        Slider ImageManagerThumbnailSlider { get; }
         Slider SidebarDefaultWidthSlider { get; }
         TextBlock SidebarDefaultWidthValueText { get; }
         Slider SidebarExpandedWidthSlider { get; }
@@ -323,10 +324,13 @@ namespace Uviewer.Services
             {
                 _host.ThumbnailSizeSlider.Value = _host.ExplorerThumbnailSize;
             }
-
             _host.ThumbnailSizeValueText.Text = $"{_host.ExplorerThumbnailSize:F0}px";
             _host.FolderThumbnailsCheckBox.IsChecked = _host.ShowFolderThumbnails;
             _host.RecursiveImageBrowsingCheckBox.IsChecked = _host.RecursiveImageBrowsing;
+            if (Math.Abs(_host.ImageManagerThumbnailSlider.Value - _host.ExplorerThumbnailSize) > 0.1)
+            {
+                _host.ImageManagerThumbnailSlider.Value = _host.ExplorerThumbnailSize;
+            }
 
             if (Math.Abs(_host.SidebarDefaultWidthSlider.Value - _host.SidebarDefaultWidth) > 0.1)
             {
@@ -458,6 +462,14 @@ namespace Uviewer.Services
         public void HandleThumbnailSizeChanged(double newValue)
         {
             _host.ExplorerThumbnailSize = Math.Clamp(newValue, 64, 180);
+            if (Math.Abs(_host.ThumbnailSizeSlider.Value - _host.ExplorerThumbnailSize) > 0.1)
+            {
+                _host.ThumbnailSizeSlider.Value = _host.ExplorerThumbnailSize;
+            }
+            if (Math.Abs(_host.ImageManagerThumbnailSlider.Value - _host.ExplorerThumbnailSize) > 0.1)
+            {
+                _host.ImageManagerThumbnailSlider.Value = _host.ExplorerThumbnailSize;
+            }
             ApplyExplorerThumbnailOptions();
             ApplyThumbnailSizeToFileItems();
             _host.ThumbnailSizeValueText.Text = $"{_host.ExplorerThumbnailSize:F0}px";
