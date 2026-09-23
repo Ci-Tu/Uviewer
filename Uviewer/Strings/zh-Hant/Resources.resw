@@ -722,4 +722,5 @@
   <data name="ImageManagerTooltip" xml:space="preserve"><value>開啟圖片管理器</value></data>
   <data name="ReturnToViewerLabel" xml:space="preserve"><value>返回看圖</value></data>
   <data name="ReturnToViewerTooltip" xml:space="preserve"><value>返回看圖介面</value></data>
+  <data name="ThisPCLabel" xml:space="preserve"><value>此電腦</value></data>
 </root>

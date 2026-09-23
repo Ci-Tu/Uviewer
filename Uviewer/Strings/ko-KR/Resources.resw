@@ -722,4 +722,5 @@
   <data name="ImageManagerTooltip" xml:space="preserve"><value>이미지 관리자 열기</value></data>
   <data name="ReturnToViewerLabel" xml:space="preserve"><value>뷰어로 돌아가기</value></data>
   <data name="ReturnToViewerTooltip" xml:space="preserve"><value>이미지 뷰어로 돌아가기</value></data>
+  <data name="ThisPCLabel" xml:space="preserve"><value>내 PC</value></data>
 </root>

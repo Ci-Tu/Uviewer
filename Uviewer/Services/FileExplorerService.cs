@@ -27,6 +27,11 @@ namespace Uviewer.Services
 
     public static class FileExplorerService
     {
+        public const string ComputerRootPath = "uviewer://computer";
+
+        public static bool IsComputerRoot(string? path) =>
+            string.Equals(path, ComputerRootPath, StringComparison.OrdinalIgnoreCase);
+
         #region Existing Extension Helpers
         public static readonly string[] SupportedImageExtensions = { ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".webp", ".avif", ".jxl", ".ico", ".tiff", ".tif" };
         public static readonly string[] SupportedTextExtensions = { ".txt", ".log", ".json", ".toml", ".csv", ".html", ".htm", ".md", ".xml" };
@@ -117,6 +122,11 @@ namespace Uviewer.Services
             return Task.Run(() =>
             {
                 token.ThrowIfCancellationRequested();
+                if (IsComputerRoot(path))
+                {
+                    return GetDriveItems(token);
+                }
+
                 var items = new List<FileItem>();
                 var parentDir = Directory.GetParent(path);
                 
@@ -194,6 +204,33 @@ namespace Uviewer.Services
 
                 return items;
             }, token);
+        }
+
+        private static List<FileItem> GetDriveItems(CancellationToken token)
+        {
+            var drives = new List<FileItem>();
+            foreach (var drive in DriveInfo.GetDrives())
+            {
+                token.ThrowIfCancellationRequested();
+                try
+                {
+                    drives.Add(new FileItem
+                    {
+                        Name = drive.Name.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+                        FullPath = drive.RootDirectory.FullName,
+                        IsDirectory = true,
+                        IsDrive = true,
+                        DisplayPath = drive.DriveType.ToString()
+                    });
+                }
+                catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is System.Security.SecurityException)
+                {
+                    // A disconnected or inaccessible mapped drive should not prevent
+                    // the remaining roots from being listed.
+                }
+            }
+
+            return drives.OrderBy(item => item.Name, NaturalSortComparer.Default).ToList();
         }
         #endregion
 

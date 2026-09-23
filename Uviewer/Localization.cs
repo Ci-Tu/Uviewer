@@ -117,6 +117,7 @@ namespace Uviewer
         public static string ExplorerFilterClear => GetString("ExplorerFilterClear");
         public static string ExplorerFilterNoMatches => GetString("ExplorerFilterNoMatches");
         public static string ParentFolderTooltip => GetString("ParentFolderTooltip");
+        public static string ThisPCLabel => GetString("ThisPCLabel");
         public static string RecentTooltip => GetString("RecentTooltip");
         public static string NoRecentFiles => GetString("NoRecentFiles");
         public static string FavoritesTooltip => GetString("FavoritesTooltip");

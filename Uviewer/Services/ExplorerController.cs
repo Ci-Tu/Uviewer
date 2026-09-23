@@ -251,7 +251,7 @@ namespace Uviewer.Services
         {
             if (item == null || item.Thumbnail != null || item.IsThumbnailLoading) return;
             if (!(item.IsImage || item.IsArchive || item.IsEpub ||
-                  (ShowFolderThumbnails && item.IsDirectory && !item.IsParentDirectory && !item.IsWebDav))) return;
+                  (ShowFolderThumbnails && item.IsDirectory && !item.IsParentDirectory && !item.IsDrive && !item.IsWebDav))) return;
 
             lock (_visibleThumbnailGate)
             {

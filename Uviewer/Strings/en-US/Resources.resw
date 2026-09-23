@@ -722,4 +722,5 @@
   <data name="ImageManagerTooltip" xml:space="preserve"><value>Open image manager</value></data>
   <data name="ReturnToViewerLabel" xml:space="preserve"><value>Return to viewer</value></data>
   <data name="ReturnToViewerTooltip" xml:space="preserve"><value>Return to image viewer</value></data>
+  <data name="ThisPCLabel" xml:space="preserve"><value>This PC</value></data>
 </root>

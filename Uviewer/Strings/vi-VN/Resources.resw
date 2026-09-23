@@ -722,4 +722,5 @@
   <data name="ImageManagerTooltip" xml:space="preserve"><value>Mở trình quản lý ảnh</value></data>
   <data name="ReturnToViewerLabel" xml:space="preserve"><value>Quay lại trình xem</value></data>
   <data name="ReturnToViewerTooltip" xml:space="preserve"><value>Quay lại trình xem ảnh</value></data>
+  <data name="ThisPCLabel" xml:space="preserve"><value>Máy tính này</value></data>
 </root>

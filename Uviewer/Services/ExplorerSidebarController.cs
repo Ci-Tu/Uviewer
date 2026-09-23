@@ -161,7 +161,9 @@ namespace Uviewer.Services
 
             _explorerController.LoadFolder(
                 path,
-                currentPath => _host.CurrentPathBreadcrumb.Text = currentPath,
+                currentPath => _host.CurrentPathBreadcrumb.Text = FileExplorerService.IsComputerRoot(currentPath)
+                    ? Strings.ThisPCLabel
+                    : currentPath,
                 ex => _host.CurrentPathBreadcrumb.Text = Strings.ErrorWithMessage(ex.Message),
                 () =>
                 {
@@ -223,7 +225,7 @@ namespace Uviewer.Services
                     return;
                 }
             }
-            else if (!Directory.Exists(entry.Path))
+            else if (!FileExplorerService.IsComputerRoot(entry.Path) && !Directory.Exists(entry.Path))
             {
                 _host.ShowNotification(Strings.FileNotFound, "\uE7BA", "Red");
                 return;
@@ -666,10 +668,16 @@ namespace Uviewer.Services
 
             if (!string.IsNullOrEmpty(_host.CurrentExplorerPath))
             {
+                if (FileExplorerService.IsComputerRoot(_host.CurrentExplorerPath)) return;
+
                 var parentDir = Directory.GetParent(_host.CurrentExplorerPath);
                 if (parentDir != null)
                 {
                     LoadFolder(parentDir.FullName);
+                }
+                else
+                {
+                    LoadFolder(FileExplorerService.ComputerRootPath);
                 }
             }
         }
