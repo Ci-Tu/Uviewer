@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using System;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Uviewer.Controls;
 using Windows.Foundation;
@@ -18,6 +19,8 @@ namespace Uviewer.Services
         public Slider ThumbnailSizeSlider { get; init; } = null!;
         public CheckBox FolderThumbnailsCheckBox { get; init; } = null!;
         public CheckBox RecursiveImageBrowsingCheckBox { get; init; } = null!;
+        public ListView FolderNavigationListView { get; init; } = null!;
+        public ObservableCollection<Models.FileItem> FolderNavigationItems { get; init; } = null!;
         public Slider SidebarDefaultWidthSlider { get; init; } = null!;
         public Slider SidebarExpandedWidthSlider { get; init; } = null!;
         public PathBreadcrumbControl CurrentPathBreadcrumb { get; init; } = null!;
@@ -77,6 +80,7 @@ namespace Uviewer.Services
             _epubReader = epubReader ?? throw new ArgumentNullException(nameof(epubReader));
             _sidebar = sidebar ?? throw new ArgumentNullException(nameof(sidebar));
             _handlers = handlers ?? throw new ArgumentNullException(nameof(handlers));
+            _sidebar.FolderNavigationListView.ItemsSource = _sidebar.FolderNavigationItems;
 
             HookImageViewerEvents();
             HookTextReaderEvents();
@@ -201,6 +205,7 @@ namespace Uviewer.Services
             };
             _sidebar.FileListView.ItemClick += (_, e) => explorer.HandleItemClick(e.ClickedItem as Models.FileItem);
             _sidebar.FileGridView.ItemClick += (_, e) => explorer.HandleItemClick(e.ClickedItem as Models.FileItem);
+            _sidebar.FolderNavigationListView.ItemClick += (_, e) => explorer.HandleItemClick(e.ClickedItem as Models.FileItem);
             _sidebar.FileListView.PreviewKeyDown += (_, e) => explorer.HandleListPreviewKeyDown(e);
             _sidebar.FileGridView.PreviewKeyDown += (_, e) => explorer.HandleGridPreviewKeyDown(e);
             _sidebar.FileListView.RightTapped += (_, e) => explorer.HandleRightTapped(e);

@@ -126,6 +126,8 @@ namespace Uviewer
                             SidebarExpandedWidthSlider = window.SidebarExpandedWidthSlider,
                             FolderThumbnailsCheckBox = window.FolderThumbnailsCheckBox,
                             RecursiveImageBrowsingCheckBox = window.RecursiveImageBrowsingCheckBox,
+                            FolderNavigationListView = window.FolderNavigationListView,
+                            FolderNavigationItems = window._explorerState.FolderItems,
                             ParentFolderButton = window.ParentFolderButton,
                             CurrentPathBreadcrumb = window.CurrentPathBreadcrumb,
                             ExplorerFilterTextBox = window.ExplorerFilterTextBox,

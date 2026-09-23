@@ -253,7 +253,11 @@
                 </Grid>
 
                 <!-- Current Path -->
-                <Grid Grid.Row="1">
+                <Grid x:Name="ExplorerContentGrid" Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition x:Name="FolderNavigationColumn" Width="0"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -261,10 +265,41 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <uc:PathBreadcrumbControl x:Name="CurrentPathBreadcrumb"
-                                              Grid.Row="0"/>
+                    <Border x:Name="FolderNavigationPane" Grid.Column="0" Grid.RowSpan="4"
+                            Visibility="Collapsed"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="0,0,1,0" Background="{ThemeResource LayerFillColorDefaultBrush}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="{x:Bind app:Strings.ExplorerFilterFolders}"
+                                       FontWeight="SemiBold" Margin="14,12,8,8"/>
+                            <ListView x:Name="FolderNavigationListView" Grid.Row="1"
+                                      SelectionMode="Single" IsItemClickEnabled="True">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Padding="8,6" ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <FontIcon Glyph="&#xE8B7;" FontSize="14" VerticalAlignment="Center"
+                                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                                                       VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Grid>
+                    </Border>
 
-                    <Grid Grid.Row="1" Margin="12,4,12,8" RowSpacing="6" ColumnSpacing="6">
+                    <uc:PathBreadcrumbControl x:Name="CurrentPathBreadcrumb"
+                                              Grid.Row="0" Grid.Column="1"/>
+
+                    <Grid Grid.Row="1" Grid.Column="1" Margin="12,4,12,8" RowSpacing="6" ColumnSpacing="6">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -300,14 +335,14 @@
                             <FontIcon Glyph="&#xE711;" FontSize="12"/>
                         </Button>
                     </Grid>
-                    <TextBlock x:Name="ExplorerFilterEmptyText" Grid.Row="2" Margin="12,4,12,8"
+                    <TextBlock x:Name="ExplorerFilterEmptyText" Grid.Row="2" Grid.Column="1" Margin="12,4,12,8"
                                Visibility="Collapsed" TextWrapping="Wrap"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                AutomationProperties.LiveSetting="Polite"
                                Text="{x:Bind app:Strings.ExplorerFilterNoMatches}"/>
 
                     <!-- File List -->
-                    <ListView x:Name="FileListView" Grid.Row="3"
+                    <ListView x:Name="FileListView" Grid.Row="3" Grid.Column="1"
                               SelectionMode="Single"
                               IsItemClickEnabled="True">
                         <ListView.ItemTemplate>
@@ -338,7 +373,7 @@
                         </ListView.ItemTemplate>
                     </ListView>
 
-                    <GridView x:Name="FileGridView" Grid.Row="3"
+                    <GridView x:Name="FileGridView" Grid.Row="3" Grid.Column="1"
                               SelectionMode="Single"
                               IsItemClickEnabled="True"
                               Visibility="Collapsed"

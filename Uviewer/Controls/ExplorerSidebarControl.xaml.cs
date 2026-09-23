@@ -93,6 +93,13 @@ namespace Uviewer.Controls
 
         internal void RefreshOverflowLabels() => QueueOverflowUpdate();
 
+        internal void SetImageManagerLayout(bool enabled)
+        {
+            FolderNavigationColumn.Width = new GridLength(enabled ? 240 : 0);
+            FolderNavigationPane.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
+            if (!enabled) FolderNavigationListView.SelectedItem = null;
+        }
+
         internal void ApplyUiFont(FontFamily fontFamily)
         {
             ExplorerFilterTextBox.FontFamily = fontFamily;

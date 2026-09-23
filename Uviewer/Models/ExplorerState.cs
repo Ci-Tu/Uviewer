@@ -17,6 +17,7 @@ namespace Uviewer.Models
 
         public string? CurrentPath { get; set; }
         public ObservableCollection<FileItem> Items { get; } = new();
+        public ObservableCollection<FileItem> FolderItems { get; } = new();
         public IReadOnlyList<FileItem> AllItems => _allItems;
         public bool IsGridView { get; set; }
         public ExplorerSortMode SortMode { get; set; } = ExplorerSortMode.Name;
@@ -32,6 +33,11 @@ namespace Uviewer.Models
         {
             // Snapshot before clearing: callers may pass the visible collection itself.
             _allItems = items.ToList();
+            FolderItems.Clear();
+            foreach (var folder in _allItems.Where(item => item.IsDirectory && !item.IsParentDirectory))
+            {
+                FolderItems.Add(folder);
+            }
             ClearDescendantItems();
             _itemsGeneration++;
             ApplyFilter();

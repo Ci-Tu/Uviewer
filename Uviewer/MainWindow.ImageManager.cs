@@ -23,6 +23,7 @@ namespace Uviewer
                 SplitterColumn.Width = _savedSplitterWidth;
                 ViewerColumn.Width = _savedViewerWidth;
                 ExplorerSidebar.Visibility = _savedSidebarVisibility;
+                ExplorerSidebar.SetImageManagerLayout(false);
                 ImageViewer.Visibility = _savedImageViewerVisibility;
                 TextReader.Visibility = _savedTextReaderVisibility;
                 EpubReader.Visibility = _savedEpubReaderVisibility;
@@ -41,6 +42,7 @@ namespace Uviewer
                 _savedSplitterVisibility = SplitterGrid.Visibility;
 
                 ExplorerSidebar.Visibility = Visibility.Visible;
+                ExplorerSidebar.SetImageManagerLayout(true);
                 SidebarColumn.Width = new GridLength(1, GridUnitType.Star);
                 SplitterColumn.Width = new GridLength(0);
                 ViewerColumn.Width = new GridLength(0);
