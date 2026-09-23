@@ -61,6 +61,7 @@
                                     </Grid>
                                     <Slider x:Name="ThumbnailSizeSlider"/>
                                     <CheckBox x:Name="FolderThumbnailsCheckBox" Content="{x:Bind app:Strings.ShowFolderThumbnailsLabel}"/>
+                                    <CheckBox x:Name="RecursiveImageBrowsingCheckBox" Content="{x:Bind app:Strings.RecursiveImageBrowsingLabel}"/>
 
                                     <Border Height="1" Background="{ThemeResource DividerStrokeColorDefaultBrush}"/>
                                     <Grid>
@@ -410,4 +411,3 @@
             </Grid>
 
 </UserControl>
-

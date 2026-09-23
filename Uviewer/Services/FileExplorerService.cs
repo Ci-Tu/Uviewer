@@ -108,10 +108,15 @@ namespace Uviewer.Services
         /// <summary>
         /// 특정 경로의 폴더를 읽어 지정된 정렬 방식으로 FileItem 리스트를 반환합니다.
         /// </summary>
-        public static Task<List<FileItem>> GetFolderContentsAsync(string path, ExplorerSortMode sortMode)
+        public static Task<List<FileItem>> GetFolderContentsAsync(
+            string path,
+            ExplorerSortMode sortMode,
+            bool includeSubfolderImages = false,
+            CancellationToken token = default)
         {
             return Task.Run(() =>
             {
+                token.ThrowIfCancellationRequested();
                 var items = new List<FileItem>();
                 var parentDir = Directory.GetParent(path);
                 
@@ -150,6 +155,7 @@ namespace Uviewer.Services
                 // Add supported files
                 foreach (var file in sortedFiles)
                 {
+                    token.ThrowIfCancellationRequested();
                     var kind = GetSupportedFileKind(file.Extension);
                     if (kind != SupportedFileKind.Unsupported)
                     {
@@ -164,10 +170,102 @@ namespace Uviewer.Services
                     }
                 }
 
+                if (includeSubfolderImages)
+                {
+                    var descendants = EnumerateRecursiveImageEntries(path, token);
+                    foreach (var entry in descendants)
+                    {
+                        token.ThrowIfCancellationRequested();
+                        var relativePath = Path.GetRelativePath(path, entry.FilePath!);
+                        var relativeFolder = Path.GetDirectoryName(relativePath);
+                        if (string.IsNullOrEmpty(relativeFolder) || relativeFolder == ".") continue;
+
+                        var item = new FileItem
+                        {
+                            Name = Path.GetFileName(entry.FilePath!),
+                            FullPath = entry.FilePath!,
+                            IsDirectory = false,
+                            DisplayPath = relativeFolder
+                        };
+                        ApplyFileKind(item, SupportedFileKind.Image);
+                        items.Add(item);
+                    }
+                }
+
                 return items;
-            });
+            }, token);
         }
         #endregion
+
+        /// <summary>
+        /// Enumerates images under a folder without following junctions/symlinks.
+        /// Directory traversal is iterative and lazy so large trees do not create a
+        /// recursive call stack or a per-directory array of every path.
+        /// </summary>
+        public static Task<List<ImageEntry>> GetRecursiveImageEntriesAsync(
+            string rootPath,
+            CancellationToken token)
+        {
+            return Task.Run(() => EnumerateRecursiveImageEntries(rootPath, token), token);
+        }
+
+        private static List<ImageEntry> EnumerateRecursiveImageEntries(string rootPath, CancellationToken token)
+        {
+            var entries = new List<ImageEntry>();
+            if (string.IsNullOrWhiteSpace(rootPath) || !Directory.Exists(rootPath)) return entries;
+
+            var pending = new Stack<string>();
+            pending.Push(rootPath);
+            var options = new EnumerationOptions
+            {
+                RecurseSubdirectories = false,
+                IgnoreInaccessible = true,
+                ReturnSpecialDirectories = false,
+                AttributesToSkip = FileAttributes.ReparsePoint
+            };
+
+            while (pending.Count > 0)
+            {
+                token.ThrowIfCancellationRequested();
+                var current = pending.Pop();
+
+                try
+                {
+                    foreach (var filePath in Directory.EnumerateFiles(current, "*", options))
+                    {
+                        token.ThrowIfCancellationRequested();
+                        if (GetSupportedFileKind(Path.GetExtension(filePath)) != SupportedFileKind.Image) continue;
+
+                        entries.Add(new ImageEntry
+                        {
+                            DisplayName = Path.GetRelativePath(rootPath, filePath),
+                            FilePath = filePath
+                        });
+                    }
+                }
+                catch (UnauthorizedAccessException) { }
+                catch (IOException) { }
+                catch (System.Security.SecurityException) { }
+
+                try
+                {
+                    foreach (var directoryPath in Directory.EnumerateDirectories(current, "*", options))
+                    {
+                        token.ThrowIfCancellationRequested();
+                        if (Path.GetFileName(directoryPath).StartsWith(".", StringComparison.Ordinal)) continue;
+                        pending.Push(directoryPath);
+                    }
+                }
+                catch (UnauthorizedAccessException) { }
+                catch (IOException) { }
+                catch (System.Security.SecurityException) { }
+            }
+
+            token.ThrowIfCancellationRequested();
+            entries.Sort((left, right) => NaturalSortComparer.Default.Compare(left.DisplayName, right.DisplayName));
+            return entries;
+        }
+
         #region Recursive Filter Search
 
         /// <summary>하위 폴더 검색 결과의 최대 개수 (과도한 탐색과 표시를 방지)</summary>

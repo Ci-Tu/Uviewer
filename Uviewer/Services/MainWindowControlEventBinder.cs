@@ -17,6 +17,7 @@ namespace Uviewer.Services
         public Button ToggleViewButton { get; init; } = null!;
         public Slider ThumbnailSizeSlider { get; init; } = null!;
         public CheckBox FolderThumbnailsCheckBox { get; init; } = null!;
+        public CheckBox RecursiveImageBrowsingCheckBox { get; init; } = null!;
         public Slider SidebarDefaultWidthSlider { get; init; } = null!;
         public Slider SidebarExpandedWidthSlider { get; init; } = null!;
         public PathBreadcrumbControl CurrentPathBreadcrumb { get; init; } = null!;
@@ -174,6 +175,8 @@ namespace Uviewer.Services
             _sidebar.ExplorerFilterTextBox.TextChanged += (_, _) => explorer.HandleFilterChanged();
             _sidebar.ExplorerFilterKindComboBox.SelectionChanged += (_, _) => explorer.HandleFilterChanged();
             _sidebar.ClearExplorerFilterButton.Click += (_, _) => explorer.ClearFilter();
+            _sidebar.RecursiveImageBrowsingCheckBox.Checked += (_, _) => explorer.HandleRecursiveImageBrowsingChanged(true);
+            _sidebar.RecursiveImageBrowsingCheckBox.Unchecked += (_, _) => explorer.HandleRecursiveImageBrowsingChanged(false);
             _sidebar.ExplorerFilterTextBox.PreviewKeyDown += (_, e) =>
             {
                 if (e.Key == Windows.System.VirtualKey.Escape)
@@ -189,6 +192,13 @@ namespace Uviewer.Services
                 explorer.HandleSelectionChanged(_sidebar.FileListView.SelectedItem as Models.FileItem);
             _sidebar.FileGridView.SelectionChanged += (_, _) =>
                 explorer.HandleSelectionChanged(_sidebar.FileGridView.SelectedItem as Models.FileItem);
+            _sidebar.FileGridView.ContainerContentChanging += (_, e) =>
+            {
+                if (!e.InRecycleQueue && e.Item is Models.FileItem item)
+                {
+                    explorer.EnsureVisibleThumbnail(item);
+                }
+            };
             _sidebar.FileListView.ItemClick += (_, e) => explorer.HandleItemClick(e.ClickedItem as Models.FileItem);
             _sidebar.FileGridView.ItemClick += (_, e) => explorer.HandleItemClick(e.ClickedItem as Models.FileItem);
             _sidebar.FileListView.PreviewKeyDown += (_, e) => explorer.HandleListPreviewKeyDown(e);

@@ -47,6 +47,7 @@ namespace Uviewer
         private TextBlock ThumbnailSizeValueText => SidebarPart<TextBlock>(nameof(ThumbnailSizeValueText));
         private Slider ThumbnailSizeSlider => SidebarPart<Slider>(nameof(ThumbnailSizeSlider));
         private CheckBox FolderThumbnailsCheckBox => SidebarPart<CheckBox>(nameof(FolderThumbnailsCheckBox));
+        private CheckBox RecursiveImageBrowsingCheckBox => SidebarPart<CheckBox>(nameof(RecursiveImageBrowsingCheckBox));
         private TextBlock SidebarDefaultWidthLabel => SidebarPart<TextBlock>(nameof(SidebarDefaultWidthLabel));
         private TextBlock SidebarDefaultWidthValueText => SidebarPart<TextBlock>(nameof(SidebarDefaultWidthValueText));
         private Slider SidebarDefaultWidthSlider => SidebarPart<Slider>(nameof(SidebarDefaultWidthSlider));

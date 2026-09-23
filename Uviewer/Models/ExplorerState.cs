@@ -25,6 +25,7 @@ namespace Uviewer.Models
         public bool IsFilterActive => FilterText.Length > 0 || FilterKind != ExplorerFilterKind.All;
         public bool HasNoFilterResults => IsFilterActive && !Items.Any(item => !item.IsParentDirectory);
         public int ItemsGeneration => _itemsGeneration;
+        public CancellationToken ThumbnailLoadingToken => _thumbnailLoadingCts?.Token ?? CancellationToken.None;
         public event EventHandler? ItemsChanged;
 
         public void ReplaceItems(IEnumerable<FileItem> items)

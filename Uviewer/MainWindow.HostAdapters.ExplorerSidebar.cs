@@ -41,6 +41,12 @@ namespace Uviewer
                 set => _window._showFolderThumbnails = value;
             }
 
+            public bool RecursiveImageBrowsing
+            {
+                get => _window._recursiveImageBrowsing;
+                set => _window._recursiveImageBrowsing = value;
+            }
+
             public double SidebarDefaultWidth
             {
                 get => _window._windowState.SidebarDefaultWidth;
@@ -67,6 +73,7 @@ namespace Uviewer
             public Slider ThumbnailSizeSlider => _window.ThumbnailSizeSlider;
             public TextBlock ThumbnailSizeValueText => _window.ThumbnailSizeValueText;
             public CheckBox FolderThumbnailsCheckBox => _window.FolderThumbnailsCheckBox;
+            public CheckBox RecursiveImageBrowsingCheckBox => _window.RecursiveImageBrowsingCheckBox;
             public Slider SidebarDefaultWidthSlider => _window.SidebarDefaultWidthSlider;
             public TextBlock SidebarDefaultWidthValueText => _window.SidebarDefaultWidthValueText;
             public Slider SidebarExpandedWidthSlider => _window.SidebarExpandedWidthSlider;
