@@ -90,6 +90,7 @@ namespace Uviewer.Models
         public const string Recent = "recent";
         public const string OpenFile = "openFile";
         public const string OpenFolder = "openFolder";
+        public const string ImageManager = "imageManager";
         public const string PdfToc = "pdfToc";
         public const string PdfGoToPage = "pdfGoToPage";
         public const string ZoomOut = "zoomOut";
@@ -116,7 +117,7 @@ namespace Uviewer.Models
 
         public static readonly string[] DefaultRightItems =
         {
-            ToggleSidebar, Favorites, Recent, OpenFile, OpenFolder,
+            ToggleSidebar, Favorites, Recent, OpenFile, OpenFolder, ImageManager,
             PdfToc, PdfGoToPage,
             ZoomOut, ZoomIn, ZoomFit, ZoomActual,
             Aozora, Vertical, Font, TextToc, GoToPage, TextSizeDown, TextSizeUp, TextTheme,
@@ -127,7 +128,7 @@ namespace Uviewer.Models
         public static readonly string[] All =
         {
             Settings, GlobalTheme, Pin, AlwaysOnTop,
-            ToggleSidebar, Favorites, Recent, OpenFile, OpenFolder,
+            ToggleSidebar, Favorites, Recent, OpenFile, OpenFolder, ImageManager,
             PdfToc, PdfGoToPage,
             ZoomOut, ZoomIn, ZoomFit, ZoomActual,
             Aozora, Vertical, Font, TextToc, GoToPage, TextSizeDown, TextSizeUp, TextTheme,
